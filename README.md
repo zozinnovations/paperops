@@ -33,7 +33,7 @@ cp .env.example .env      # add your RADEON_API_KEY
 docker compose up --build
 ```
 
-Open http://localhost:8000. The first build downloads the Whisper model into the image (~500 MB). For a smaller, faster image use `WHISPER_MODEL=base.en` in `.env`.
+Open http://localhost:8000 (another host port: `PORT=8002` in `.env`). The first build downloads the Whisper model into the image (image ~1.8 GB). For a smaller, faster model use `WHISPER_MODEL=base.en` in `.env`.
 
 ### Hosted with HTTPS
 

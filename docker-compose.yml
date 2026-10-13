@@ -1,0 +1,28 @@
+services:
+  paperops:
+    build:
+      context: .
+      args:
+        WHISPER_MODEL: ${WHISPER_MODEL:-small.en}
+    env_file: .env
+    ports:
+      - "${PORT:-8000}:8000"
+    restart: unless-stopped
+
+  # HTTPS for the hosted demo (browsers only allow the microphone over HTTPS).
+  # Set DOMAIN in .env, point its DNS to the server, then: docker compose --profile https up -d
+  caddy:
+    image: caddy:2.8
+    profiles: ["https"]
+    command: caddy reverse-proxy --from ${DOMAIN:-localhost} --to paperops:8000
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+    depends_on:
+      - paperops
+    restart: unless-stopped
+
+volumes:
+  caddy_data:

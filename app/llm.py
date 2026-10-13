@@ -42,14 +42,21 @@ def client():
     return _client
 
 
+_last_discovery = [0.0]
+
+
 def discover_models():
-    """GET /v1/models once at startup; never rely on one hard-coded model."""
+    """GET /v1/models at startup (retried at most every 30 s while it fails); never rely on one hard-coded model."""
     global _available
+    if _available is None and time.time() - _last_discovery[0] < 30:
+        return []
+    _last_discovery[0] = time.time()
     try:
         _available = [m.id for m in client().models.list().data]
-    except Exception as e:  # keep running (replay mode) even if the API is down
+    except Exception as e:  # keep running (replay mode) even if the API is down; retry on the next request
         log.warning("model discovery failed: %s", e)
-        _available = []
+        _available = None
+        return []
     return _available
 
 
@@ -57,7 +64,7 @@ def chain():
     wanted = [PRIMARY_MODEL, *FALLBACK_MODELS]
     if _available is None:
         discover_models()
-    return [m for m in wanted if m in _available] or wanted
+    return [m for m in wanted if m in (_available or [])] or wanted
 
 
 def _key(model, system, user):

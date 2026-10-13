@@ -74,6 +74,8 @@ def index():
 
 @app.get("/api/status")
 def api_status():
+    if llm._available is None:
+        threading.Thread(target=llm.discover_models, daemon=True).start()
     return {"printer": printer.status(), "printer_host": printer.PRINTER_HOST or None,
             "models": llm.chain() if llm._available is not None else [], "stt": f"{stt.STT_BACKEND}:{stt.WHISPER_MODEL}",
             "replay_mode": llm.REPLAY_MODE}
