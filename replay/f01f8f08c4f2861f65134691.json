@@ -1,0 +1,8 @@
+{
+  "model": "MiMo-V2.6-Flash",
+  "user": "The paint line is dripping at the back left.",
+  "system_sha": "f98b8b2d61007220",
+  "content": "{\"machine_id\": \"UNKNOWN\", \"error_code\": \"\", \"cause\": \"\", \"part\": \"\", \"symptoms\": [\"paint line dripping at back left\"], \"transcript\": \"The paint line is dripping at the back left.\"}",
+  "seconds": 3.927,
+  "recorded": "2026-10-14T00:46:07"
+}

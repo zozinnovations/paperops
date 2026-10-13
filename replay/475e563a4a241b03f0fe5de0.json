@@ -1,0 +1,8 @@
+{
+  "model": "MiMo-V2.6-Flash",
+  "user": "Welding cell: the seams have pores and the gas warning is on.",
+  "system_sha": "f98b8b2d61007220",
+  "content": "{\"machine_id\": \"SR-16\", \"error_code\": \"E-944\", \"cause\": \"Gas cylinder empty\", \"part\": \"Shielding gas M21 cylinder 20 l\", \"symptoms\": [\"pores in the seam\", \"gas warning\"], \"transcript\": \"Welding cell: the seams have pores and the gas warning is on.\"}",
+  "seconds": 5.288,
+  "recorded": "2026-10-14T00:46:12"
+}

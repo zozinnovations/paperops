@@ -1,0 +1,8 @@
+{
+  "model": "MiMo-V2.6-Flash",
+  "user": "Mill two stops in the middle of the program, the spindle is really hot and there's no coolant coming out.",
+  "system_sha": "f98b8b2d61007220",
+  "content": "{\"machine_id\": \"FZ-65\", \"error_code\": \"E-701\", \"cause\": \"Coolant level low\", \"part\": \"Coolant concentrate\", \"symptoms\": [\"machine stops mid-program\", \"spindle hot\", \"no coolant flow\"], \"transcript\": \"Mill two stops in the middle of the program, the spindle is really hot and there's no coolant coming out.\"}",
+  "seconds": 4.479,
+  "recorded": "2026-10-14T00:45:52"
+}

@@ -67,12 +67,12 @@ def check_inventory(part_name):
 
 
 def recurring_faults(machine_id, code):
-    """(count, days between first and last occurrence) in the 30-day ticket history."""
+    """(count, calendar days from first to last occurrence, inclusive) in the 30-day ticket history."""
     hits = sorted(t["ts"] for t in HISTORY if t["machine_id"] == machine_id and t["code"] == code)
     if not hits:
         return 0, 0
     from datetime import datetime
-    span = (datetime.fromisoformat(hits[-1]) - datetime.fromisoformat(hits[0])).days
+    span = (datetime.fromisoformat(hits[-1]).date() - datetime.fromisoformat(hits[0]).date()).days + 1
     return len(hits), span
 
 

@@ -99,8 +99,8 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
     }
     ticket.update(stock_fields(inv))
     if count >= 2:
-        ticket["recurring_fault"] = (f"{error['code']} on {machine['machine_id']}: {count}x in the last {days} days "
-                                     "- schedule preventive maintenance.")
+        ticket["recurring_fault"] = (f"{error['code']} on {machine['machine_id']}: {count}x in {days} days. "
+                                     "Check the root cause and schedule preventive maintenance.")
     return ticket
 
 

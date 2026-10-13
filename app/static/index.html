@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PaperOps</title>
+  <meta name="description" content="Voice-driven maintenance dispatcher: press, speak, get a printed repair ticket.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='2' fill='%23f5f1e8'/%3E%3Crect x='6' y='7' width='20' height='5' fill='%23f08c2e'/%3E%3Crect x='9' y='15' width='14' height='2' fill='%23222'/%3E%3Crect x='9' y='19' width='10' height='2' fill='%23222'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>PaperOps</h1>
+        <p class="tagline">Press. Speak. Fix.</p>
+      </div>
+    </div>
+    <div class="status">
+      <span class="pill" id="printer-status"><span class="dot"></span><span class="label">Printer: …</span></span>
+      <span class="pill subtle" id="model-status">AI on AMD: …</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="input-panel" aria-label="Report a fault">
+      <div class="ptt-wrap">
+        <button id="ptt" class="ptt" type="button" aria-label="Hold to speak" aria-pressed="false" aria-describedby="ptt-hint">
+          <span class="ptt-ring" aria-hidden="true"></span>
+          <svg class="mic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+          <span class="ptt-label">HOLD TO SPEAK</span>
+          <span class="ptt-timer" id="ptt-timer"></span>
+        </button>
+        <p class="hint" id="ptt-hint">Hold the button, the <kbd>Space</kbd> bar or the foot pedal while you speak.</p>
+      </div>
+
+      <p class="heard" id="heard" hidden></p>
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <ol class="progress" id="progress" aria-label="Progress">
+        <li data-step="listening"><span class="icon"></span><span class="name">Listening</span><span class="ms"></span></li>
+        <li data-step="understanding"><span class="icon"></span><span class="name">Understanding</span><span class="ms"></span></li>
+        <li data-step="manual"><span class="icon"></span><span class="name">Manual</span><span class="ms"></span></li>
+        <li data-step="stock"><span class="icon"></span><span class="name">Stock</span><span class="ms"></span></li>
+        <li data-step="printing"><span class="icon"></span><span class="name">Printing</span><span class="ms"></span></li>
+      </ol>
+      <p class="total" id="total" hidden></p>
+
+      <details class="tester" open>
+        <summary>No microphone? Type or use a sample</summary>
+        <form id="text-form" class="text-form">
+          <label for="text-input" class="sr-only">Fault report</label>
+          <input id="text-input" type="text" maxlength="500" autocomplete="off"
+                 placeholder="e.g. Press three is stuck. Error E four oh two.">
+          <button type="submit" class="btn">Create ticket</button>
+        </form>
+        <p class="samples-title">Sample recordings</p>
+        <div class="samples" id="samples"></div>
+      </details>
+
+      <div class="recent">
+        <h2>Recent tickets</h2>
+        <ul id="recent"><li class="empty">No tickets yet.</li></ul>
+      </div>
+    </section>
+
+    <section class="output-panel" aria-label="Printed ticket">
+      <div class="printer">
+        <div class="slot" aria-hidden="true"></div>
+        <div class="paper-window">
+          <div class="paper idle" id="paper">
+            <div class="receipt" id="receipt"><p class="placeholder">Your repair ticket prints here.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="receipt-actions">
+        <button class="btn" id="download" type="button" disabled>Download PNG</button>
+        <button class="btn" id="print" type="button" disabled>Print (80 mm)</button>
+        <label class="toggle"><input type="checkbox" id="show-cmds"> Show printer commands</label>
+      </div>
+      <div class="commands" id="commands" hidden>
+        <p class="commands-note">These ESC/POS bytes go to the thermal printer. The simulator above renders exactly the same bytes.</p>
+        <pre id="cmd-list"></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    AI runs on AMD GPUs via the AMD Token Factory · Speech-to-text runs on our server, never in a third-party cloud ·
+    All demo data is fictional
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="/static/escpos.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
