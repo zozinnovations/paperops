@@ -6,7 +6,7 @@ Usage:  python scripts/bench_cases.py [--model MODEL] [--cases T01,T02]
 import argparse
 import json
 
-from common import CASES, PRIMARY_MODEL, check_ticket, make_client
+from common import CASES, PRIMARY_MODEL, check_ticket
 from test_fast import run_fast
 
 
@@ -18,10 +18,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=PRIMARY_MODEL)
     ap.add_argument("--cases", help="comma-separated case IDs (default: all)")
-    ap.add_argument("--reasoning", default="none", help="reasoning_effort: none | low | medium | high")
     args = ap.parse_args()
     ids = args.cases.split(",") if args.cases else list(CASES)
-    client = make_client()
 
     rows = []
     for cid in ids:
@@ -30,7 +28,7 @@ def main():
         exp = case["expected"]
         exp_txt = short(exp, ["machine", "priority", "cause_code", "part_needed"])
         try:
-            r = run_fast(client, args.model, case, reasoning=args.reasoning)
+            r = run_fast(args.model, case)
         except Exception as e:  # keep going with the other cases
             print(f"  ERROR: {type(e).__name__}: {e}")
             rows.append((cid, exp_txt, f"error ({type(e).__name__})", "FAIL", "-"))
@@ -39,8 +37,8 @@ def main():
             print(f"  {name:<18} {dt * 1000:9.1f} ms")
         t = r["ticket"]
         if t is None:
-            print("  INVALID: " + r["raw"][:300])
-            rows.append((cid, exp_txt, "invalid model output", "FAIL", f"{r['total']:.2f} s"))
+            print("  FAILED: " + r["raw"][:300])
+            rows.append((cid, exp_txt, "model failed", "FAIL", f"{r['total']:.2f} s"))
             continue
         print(json.dumps(t, indent=2, ensure_ascii=False))
         ok, fails = check_ticket(t, exp)

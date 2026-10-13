@@ -19,7 +19,7 @@ def main():
     client = make_client()
 
     runs = [("A tool calling", m, run_agent) for m in [PRIMARY_MODEL, *FALLBACK_MODELS]]
-    runs.append(("B single call", PRIMARY_MODEL, run_fast))
+    runs.append(("B single call", PRIMARY_MODEL, lambda _client, model, case: run_fast(model, case)))
 
     rows = []
     for variant, model, fn in runs:

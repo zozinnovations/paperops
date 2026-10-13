@@ -5,15 +5,13 @@ Usage:  python scripts/test_audio.py [--wav samples/T01.wav] [--case T01] [--run
 """
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
-from common import CASES, PRIMARY_MODEL, ROOT, check_ticket, make_client
+from common import CASES, PRIMARY_MODEL, ROOT, check_ticket
 from test_fast import run_fast
 
-sys.path.insert(0, str(ROOT))
-from app import stt  # noqa: E402
+from app import stt
 
 
 def main():
@@ -30,10 +28,9 @@ def main():
     stt.warm_up()
     print(f"STT {stt.STT_BACKEND}:{stt.WHISPER_MODEL} (beam {stt.WHISPER_BEAM}) loaded in {time.perf_counter() - t0:.2f}s\n")
 
-    client = make_client()
     for i in range(args.runs):
         s = stt.transcribe(audio)
-        r = run_fast(client, args.model, dict(case, payload=dict(case["payload"], transcript=s["text"])), verbose=False)
+        r = run_fast(args.model, case, transcript=s["text"], verbose=False)
         ok, fails = check_ticket(r["ticket"], case["expected"]) if r["ticket"] else (False, ["invalid output"])
         print(f"run {i + 1}: STT {s['seconds']:.2f}s + variant B {r['total']:.2f}s = {s['seconds'] + r['total']:.2f}s"
               f"  correct: {'yes' if ok else fails}")
