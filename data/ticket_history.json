@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "description": "Fictional ticket history of the last 30 days. Basis for early detection (recurring faults -> recommend preventive maintenance). Pattern: E-402 on HP-400 is getting more frequent; hydraulic filter stock below minimum.",
+    "window": "2026-09-10 to 2026-10-10",
+    "language": "en"
+  },
+  "tickets": [
+    {
+      "id": "ticket-901",
+      "ts": "2026-09-11T08:40:00+02:00",
+      "machine_id": "FB-12",
+      "code": "E-322",
+      "priority": "NORMAL",
+      "downtime_min": 15,
+      "part_used": null
+    },
+    {
+      "id": "ticket-904",
+      "ts": "2026-09-13T14:05:00+02:00",
+      "machine_id": "FZ-65",
+      "code": "E-733",
+      "priority": "NORMAL",
+      "downtime_min": 22,
+      "part_used": null
+    },
+    {
+      "id": "ticket-907",
+      "ts": "2026-09-16T10:30:00+02:00",
+      "machine_id": "SR-16",
+      "code": "E-944",
+      "priority": "NORMAL",
+      "downtime_min": 12,
+      "part_used": "GAS-M21-20"
+    },
+    {
+      "id": "ticket-911",
+      "ts": "2026-09-18T06:55:00+02:00",
+      "machine_id": "HP-400",
+      "code": "E-215",
+      "priority": "HIGH",
+      "downtime_min": 95,
+      "part_used": "HF-400-F1"
+    },
+    {
+      "id": "ticket-915",
+      "ts": "2026-09-22T11:10:00+02:00",
+      "machine_id": "FZ-65",
+      "code": "E-701",
+      "priority": "HIGH",
+      "downtime_min": 40,
+      "part_used": "KF-2"
+    },
+    {
+      "id": "ticket-918",
+      "ts": "2026-09-24T09:00:00+02:00",
+      "machine_id": "SR-16",
+      "code": "E-910",
+      "priority": "NORMAL",
+      "downtime_min": 30,
+      "part_used": "DV-R-10"
+    },
+    {
+      "id": "ticket-922",
+      "ts": "2026-09-26T13:45:00+02:00",
+      "machine_id": "HP-400",
+      "code": "E-402",
+      "priority": "HIGH",
+      "downtime_min": 28,
+      "part_used": "SM-46-05"
+    },
+    {
+      "id": "ticket-926",
+      "ts": "2026-09-29T07:20:00+02:00",
+      "machine_id": "FB-12",
+      "code": "E-301",
+      "priority": "HIGH",
+      "downtime_min": 35,
+      "part_used": "KL-6205"
+    },
+    {
+      "id": "ticket-929",
+      "ts": "2026-10-01T15:30:00+02:00",
+      "machine_id": "HP-400",
+      "code": "E-402",
+      "priority": "HIGH",
+      "downtime_min": 31,
+      "part_used": "SM-46-05"
+    },
+    {
+      "id": "ticket-933",
+      "ts": "2026-10-03T10:10:00+02:00",
+      "machine_id": "SR-16",
+      "code": "E-910",
+      "priority": "NORMAL",
+      "downtime_min": 27,
+      "part_used": "DV-R-10"
+    },
+    {
+      "id": "ticket-936",
+      "ts": "2026-10-05T08:15:00+02:00",
+      "machine_id": "FZ-65",
+      "code": "E-750",
+      "priority": "HIGH",
+      "downtime_min": 50,
+      "part_used": "FE-NLGI2"
+    },
+    {
+      "id": "ticket-938",
+      "ts": "2026-10-07T12:00:00+02:00",
+      "machine_id": "HP-400",
+      "code": "E-402",
+      "priority": "HIGH",
+      "downtime_min": 34,
+      "part_used": "SM-46-05"
+    },
+    {
+      "id": "ticket-940",
+      "ts": "2026-10-09T09:35:00+02:00",
+      "machine_id": "FB-12",
+      "code": "E-322",
+      "priority": "NORMAL",
+      "downtime_min": 14,
+      "part_used": null
+    }
+  ],
+  "expected_insights": [
+    "HP-400 / E-402: 3 times in 12 days (Sep 26, Oct 1, Oct 7), intervals getting shorter -> check root cause (supply line A3 or dosing pump P2) instead of just refilling oil.",
+    "SR-16 / E-910: 2 times in 9 days, wire feed roll stock is now 0 and not reordered -> trigger reorder.",
+    "Hydraulic filter F1: stock 1 is below minimum stock 2."
+  ]
+}

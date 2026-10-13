@@ -1,0 +1,33 @@
+# Secrets – never commit the real API key
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.next/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs and local recordings
+*.log
+recordings/
+*.wav
+*.mp3
+!samples/*.wav
+
+# Replay cache with real API responses (keep only curated files in replay/)
+cache/

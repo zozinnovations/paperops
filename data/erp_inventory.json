@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "description": "Fictional ERP spare parts inventory for the PaperOps demo (source for tool check_inventory). All data invented.",
+    "warehouse": "Maintenance store, Hall 4",
+    "snapshot": "2026-10-10T08:00:00+02:00",
+    "language": "en"
+  },
+  "parts": [
+    {"sku": "SM-46-05", "name": "Lubricating oil ISO VG 46", "aliases": ["lube oil", "VG 46", "axis oil"], "spec": "Mineral oil, 5 l canister", "location": "Shelf 4, Box B", "stock": 4, "unit": "canisters", "min_stock": 2, "alternative_sku": null},
+    {"sku": "HY-46-20", "name": "Hydraulic oil HLP 46", "aliases": ["hydraulic oil", "HLP"], "spec": "DIN 51524-2, 20 l canister", "location": "Shelf 4, Box C", "stock": 3, "unit": "canisters", "min_stock": 1, "alternative_sku": null},
+    {"sku": "HF-400-F1", "name": "Hydraulic filter F1 HP-400", "aliases": ["hydraulic filter", "filter F1"], "spec": "10 µm, original HP-400", "location": "Shelf 2, Box A", "stock": 1, "unit": "pcs", "min_stock": 2, "alternative_sku": null},
+    {"sku": "DS-400-HZ", "name": "Main cylinder seal kit HP-400", "aliases": ["seal kit", "cylinder seal"], "spec": "Original, NBR, Ø 80 mm", "location": "Shelf 2, Box D", "stock": 0, "unit": "kits", "min_stock": 1, "alternative_sku": "DS-UNI-8095", "reorder": {"status": "ordered", "eta": "2026-10-14"}},
+    {"sku": "DS-UNI-8095", "name": "Universal seal kit NBR 80x95", "aliases": ["universal seal"], "spec": "NBR, 80x95 mm, approved replacement for HP-400", "location": "Shelf 2, Box E", "stock": 2, "unit": "kits", "min_stock": 1, "alternative_sku": null},
+    {"sku": "LV-PS-30", "name": "Light curtain test rod 30 mm", "aliases": ["test rod"], "spec": "Ø 30 mm", "location": "Tool cabinet W1, drawer 2", "stock": 2, "unit": "pcs", "min_stock": 1, "alternative_sku": null},
+    {"sku": "KSS-K-05", "name": "Coolant concentrate", "aliases": ["coolant", "emulsion"], "spec": "water-miscible, 5 l canister", "location": "Shelf 5, Box A", "stock": 6, "unit": "canisters", "min_stock": 2, "alternative_sku": null},
+    {"sku": "KF-2", "name": "Coolant filter KF-2", "aliases": ["coolant filter"], "spec": "fleece 50 µm", "location": "Shelf 5, Box B", "stock": 5, "unit": "pcs", "min_stock": 2, "alternative_sku": null},
+    {"sku": "FE-NLGI2", "name": "Grease NLGI 2", "aliases": ["grease", "lubricating grease"], "spec": "lithium soap grease, 400 g cartridge", "location": "Shelf 4, Box A", "stock": 12, "unit": "cartridges", "min_stock": 4, "alternative_sku": null},
+    {"sku": "KL-6205", "name": "Ball bearing 6205-2RS", "aliases": ["bearing 6205", "ball bearing"], "spec": "25x52x15 mm, sealed both sides", "location": "Shelf 1, Box C", "stock": 8, "unit": "pcs", "min_stock": 4, "alternative_sku": null},
+    {"sku": "KR-M6-10", "name": "Contact tip M6 1.0 mm", "aliases": ["contact tip", "welding tip"], "spec": "CuCrZr, M6", "location": "Shelf 6, Box A", "stock": 40, "unit": "pcs", "min_stock": 20, "alternative_sku": null},
+    {"sku": "DV-R-10", "name": "Wire feed roll 1.0 mm", "aliases": ["feed roll", "wire roll"], "spec": "V-groove, 1.0 mm steel", "location": "Shelf 6, Box B", "stock": 0, "unit": "pcs", "min_stock": 2, "alternative_sku": null, "reorder": {"status": "not ordered", "eta": null}},
+    {"sku": "GAS-M21-20", "name": "Shielding gas M21 cylinder 20 l", "aliases": ["shielding gas", "gas cylinder", "M21"], "spec": "Ar 82 % / CO2 18 %", "location": "Outdoor gas store, spot 3", "stock": 3, "unit": "cylinders", "min_stock": 2, "alternative_sku": null}
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "_meta": {
+    "description": "Fictional machine manuals for the PaperOps demo (source for tool search_manual). All data invented.",
+    "plant": "Demo Plant, Hall 4",
+    "version": "2.0",
+    "language": "en"
+  },
+  "machines": [
+    {
+      "machine_id": "HP-400",
+      "name": "Hydraulic press HP-400",
+      "aliases": ["Press 3", "press three", "the big press", "HP400"],
+      "location": "Hall 4B, Line 2",
+      "lockout_procedure": "Turn main switch Q1 OFF, attach padlock, release hydraulic accumulator via valve V7, pressure gauge must read 0 bar.",
+      "error_codes": [
+        {
+          "code": "E-402",
+          "title": "Lubrication failure on main axis",
+          "symptoms": ["axis running hot", "squeaking during stroke", "press stuck"],
+          "causes": ["Supply line A3 blocked or cracked", "Lubricating oil tank empty", "Dosing pump P2 faulty"],
+          "default_priority": "HIGH",
+          "safety": "Lock the emergency stop. Axis can be above 80 °C – wear heat-resistant gloves.",
+          "steps": [
+            "Lock the emergency stop (lockout Q1).",
+            "Check supply line A3 for cracks and blockage.",
+            "Refill 500 ml lubricating oil ISO VG 46.",
+            "Run dosing pump P2 in manual mode for 3 cycles.",
+            "Check pressure gauge: target 2.5–3.0 bar."
+          ],
+          "parts": [{"part": "Lubricating oil ISO VG 46", "qty": "0.5 l"}],
+          "est_minutes": 25
+        },
+        {
+          "code": "E-215",
+          "title": "Hydraulic pressure too low",
+          "symptoms": ["press cannot complete stroke", "oil puddle under cylinder", "hissing"],
+          "causes": ["Main cylinder seal worn", "Hydraulic filter clogged", "Oil level too low"],
+          "default_priority": "HIGH",
+          "safety": "Release hydraulic accumulator via V7. Oil escaping under pressure can penetrate skin.",
+          "steps": [
+            "Lockout Q1, release accumulator via V7, wait for 0 bar.",
+            "Check oil level in sight glass, top up hydraulic oil HLP 46 if needed.",
+            "Check differential pressure indicator of hydraulic filter F1; replace if red.",
+            "If the cylinder leaks: replace the main cylinder seal kit.",
+            "Test stroke without workpiece, pressure must reach 180 bar."
+          ],
+          "parts": [
+            {"part": "Hydraulic oil HLP 46", "qty": "5 l"},
+            {"part": "Hydraulic filter F1 HP-400", "qty": "1 pc"},
+            {"part": "Main cylinder seal kit HP-400", "qty": "1 kit"}
+          ],
+          "est_minutes": 90
+        },
+        {
+          "code": "E-118",
+          "title": "Light curtain safety field interrupted / faulty",
+          "symptoms": ["press does not start", "light curtain flashing red", "no release signal"],
+          "causes": ["Transmitter/receiver dirty", "Cable damaged", "Light curtain misaligned"],
+          "default_priority": "CRITICAL",
+          "safety": "SAFETY FUNCTION! Never run the press without a working light curtain. Bypassing is forbidden. Qualified electrician only.",
+          "steps": [
+            "Take the press out of service and attach a 'DO NOT SWITCH ON' sign.",
+            "Call a qualified electrician – never bypass.",
+            "Clean transmitter and receiver optics with a lint-free cloth.",
+            "Check connector X12 for damage.",
+            "Run a function test with the 30 mm test rod at 3 points and document it."
+          ],
+          "parts": [{"part": "Light curtain test rod 30 mm", "qty": "1 pc"}],
+          "est_minutes": 40
+        }
+      ]
+    },
+    {
+      "machine_id": "FZ-65",
+      "name": "CNC milling center FZ-65",
+      "aliases": ["CNC 2", "mill two", "the five-axis"],
+      "location": "Hall 4A, Cell 3",
+      "lockout_procedure": "Press emergency stop, turn main switch OFF, attach padlock, wait for spindle to stop.",
+      "error_codes": [
+        {
+          "code": "E-701",
+          "title": "Spindle temperature too high",
+          "symptoms": ["spindle hot", "machine stops mid-program", "no coolant flow"],
+          "causes": ["Coolant level low", "Coolant filter clogged", "Cooling unit fan faulty"],
+          "default_priority": "HIGH",
+          "safety": "Let the spindle cool down for 10 minutes. Coolant: wear skin protection.",
+          "steps": [
+            "Stop the program, press emergency stop, let the spindle cool down.",
+            "Check coolant level, top up with 5 % coolant emulsion.",
+            "Clean or replace coolant filter KF-2.",
+            "Check that the cooling unit fan is running.",
+            "Start spindle warm-up program O9001."
+          ],
+          "parts": [
+            {"part": "Coolant concentrate", "qty": "2 l"},
+            {"part": "Coolant filter KF-2", "qty": "1 pc"}
+          ],
+          "est_minutes": 35
+        },
+        {
+          "code": "E-733",
+          "title": "Tool changer blocked",
+          "symptoms": ["tool change aborts", "magazine does not rotate", "gripper stuck"],
+          "causes": ["Chips in the gripper", "Tool not seated correctly in magazine", "Air pressure too low"],
+          "default_priority": "NORMAL",
+          "safety": "Do not reach into the magazine while compressed air is connected.",
+          "steps": [
+            "Press emergency stop, shut off compressed air at service unit W1.",
+            "Clean chips from gripper and magazine pocket.",
+            "Check that the tool holder is seated correctly.",
+            "Open compressed air, check target value 6 bar.",
+            "Test tool change in setup mode."
+          ],
+          "parts": [],
+          "est_minutes": 20
+        },
+        {
+          "code": "E-750",
+          "title": "Following error on X axis",
+          "symptoms": ["axis jerks", "dimensional deviation", "X axis alarm"],
+          "causes": ["Guideway not lubricated", "Ball screw worn", "Coupling loose"],
+          "default_priority": "HIGH",
+          "safety": "Lockout. Secure axes against dropping.",
+          "steps": [
+            "Lock out the main switch.",
+            "Check central lubrication, refill grease NLGI 2.",
+            "Check motor/ball screw coupling for play.",
+            "Jog X axis slowly in manual mode, listen for noises.",
+            "If the error persists: request a service technician from the manufacturer."
+          ],
+          "parts": [{"part": "Grease NLGI 2", "qty": "1 cartridge"}],
+          "est_minutes": 45
+        }
+      ]
+    },
+    {
+      "machine_id": "FB-12",
+      "name": "Conveyor belt FB-12",
+      "aliases": ["Belt 1", "belt one", "feed belt", "conveyor"],
+      "location": "Hall 4B, Line 2 (in front of HP-400)",
+      "lockout_procedure": "Pull the emergency pull-cord, switch off and lock drive at switch S4.",
+      "error_codes": [
+        {
+          "code": "E-301",
+          "title": "Motor protection switch tripped",
+          "symptoms": ["belt stopped", "motor humming", "burning smell from motor"],
+          "causes": ["Belt overloaded", "Drive roller bearing seized", "Foreign object jammed"],
+          "default_priority": "HIGH",
+          "safety": "Lock drive S4. Never reach into a running belt.",
+          "steps": [
+            "Switch off and lock drive S4.",
+            "Unload the belt and check for foreign objects.",
+            "Turn the drive roller by hand – if stiff, replace bearing 6205-2RS.",
+            "Reset motor protection switch Q4.",
+            "Run idle for 2 minutes, check current draw (max. 4.2 A)."
+          ],
+          "parts": [{"part": "Ball bearing 6205-2RS", "qty": "2 pcs"}],
+          "est_minutes": 30
+        },
+        {
+          "code": "E-322",
+          "title": "Belt misalignment",
+          "symptoms": ["belt running to one side", "belt rubbing on frame", "frayed edge"],
+          "causes": ["Tension roller misadjusted", "Dirt on rollers"],
+          "default_priority": "NORMAL",
+          "safety": "Lock drive S4.",
+          "steps": [
+            "Lock drive S4.",
+            "Clean residue from the rollers.",
+            "Adjust the tension roller on the run-off side by 1/4 turn.",
+            "Test run, repeat until the belt runs centered."
+          ],
+          "parts": [],
+          "est_minutes": 15
+        }
+      ]
+    },
+    {
+      "machine_id": "SR-16",
+      "name": "Welding robot SR-16",
+      "aliases": ["Robot 5", "robot five", "welding cell", "the welder"],
+      "location": "Hall 4C, Cell 5",
+      "lockout_procedure": "Open cell door only after robot safety stop, key switch to T1, lock main switch.",
+      "error_codes": [
+        {
+          "code": "E-910",
+          "title": "Wire feed fault",
+          "symptoms": ["no wire coming out", "arc breaks off", "wire tangled"],
+          "causes": ["Feed rolls worn", "Wire liner dirty", "Contact tip fused"],
+          "default_priority": "NORMAL",
+          "safety": "Torch may be hot. Switch off the welding power source.",
+          "steps": [
+            "Robot safety stop, power source off.",
+            "Check and replace contact tip M6 1.0 mm.",
+            "Check wire feed rolls 1.0 mm for wear.",
+            "Blow out the wire liner with compressed air.",
+            "Re-thread the wire, weld a test seam."
+          ],
+          "parts": [
+            {"part": "Contact tip M6 1.0 mm", "qty": "2 pcs"},
+            {"part": "Wire feed roll 1.0 mm", "qty": "2 pcs"}
+          ],
+          "est_minutes": 25
+        },
+        {
+          "code": "E-944",
+          "title": "Shielding gas flow too low",
+          "symptoms": ["pores in the seam", "gas warning", "black seam"],
+          "causes": ["Gas cylinder empty", "Hose leaking", "Gas nozzle dirty"],
+          "default_priority": "NORMAL",
+          "safety": "Secure the gas cylinder against falling over.",
+          "steps": [
+            "Check cylinder pressure on the gauge; below 10 bar = replace cylinder.",
+            "Clean gas nozzle, apply anti-spatter spray.",
+            "Check hose with leak detection spray.",
+            "Set flow to 12–15 l/min."
+          ],
+          "parts": [{"part": "Shielding gas M21 cylinder 20 l", "qty": "1 pc"}],
+          "est_minutes": 15
+        }
+      ]
+    }
+  ]
+}
