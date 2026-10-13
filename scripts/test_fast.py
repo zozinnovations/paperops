@@ -138,7 +138,7 @@ def user_content(case, audio_path=None):
     ]
 
 
-def run_fast(client, model, case, audio_path=None, verbose=True):
+def run_fast(client, model, case, audio_path=None, reasoning="none", verbose=True):
     log = print if verbose else (lambda *a, **k: None)
     timings = []
     t_start = time.perf_counter()
@@ -152,7 +152,7 @@ def run_fast(client, model, case, audio_path=None, verbose=True):
         ],
         # Token Factory has no json_schema mode (structured_outputs: false) -> json_object + validate below
         response_format={"type": "json_object"},
-        reasoning_effort="none",
+        reasoning_effort=reasoning,  # GLM-5.3-Flash only accepts low/medium/high
         temperature=0,
         max_tokens=400,
     )

@@ -18,6 +18,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=PRIMARY_MODEL)
     ap.add_argument("--cases", help="comma-separated case IDs (default: all)")
+    ap.add_argument("--reasoning", default="none", help="reasoning_effort: none | low | medium | high")
     args = ap.parse_args()
     ids = args.cases.split(",") if args.cases else list(CASES)
     client = make_client()
@@ -29,7 +30,7 @@ def main():
         exp = case["expected"]
         exp_txt = short(exp, ["machine", "priority", "cause_code", "part_needed"])
         try:
-            r = run_fast(client, args.model, case)
+            r = run_fast(client, args.model, case, reasoning=args.reasoning)
         except Exception as e:  # keep going with the other cases
             print(f"  ERROR: {type(e).__name__}: {e}")
             rows.append((cid, exp_txt, f"error ({type(e).__name__})", "FAIL", "-"))
