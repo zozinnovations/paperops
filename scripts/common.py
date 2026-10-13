@@ -80,7 +80,8 @@ def search_manual(query):
 
 def check_inventory(part_name):
     q = part_name.lower()
-    for p in INVENTORY:
+    exact = [p for p in INVENTORY if p["name"].lower() == q]
+    for p in exact + INVENTORY:
         names = [p["name"], *p["aliases"]]
         if any(n.lower() in q or q in n.lower() for n in names):
             result = dict(p, found=True)
@@ -100,9 +101,13 @@ def stock_fields(inv):
     if not inv.get("found"):
         return {}
     part, note = inv, None
+    reorder = inv.get("reorder") or {}
+    reorder_txt = f"reorder {reorder.get('status', 'unknown')}" + (f", ETA {reorder['eta']}" if reorder.get("eta") else "")
     if inv["stock"] == 0 and inv.get("alternative"):
         part = inv["alternative"]
-        note = f"Original {inv['name']} out of stock - use approved alternative {part['name']}."
+        note = f"Original out of stock: {inv['name']} ({reorder_txt}). Use approved alternative {part['name']}."
+    elif inv["stock"] == 0:
+        note = f"Out of stock, no alternative ({reorder_txt}) - escalate to shift supervisor and reorder now."
     out = {
         "part_needed": part["name"],
         "location": part["location"],
@@ -118,11 +123,29 @@ def stock_fields(inv):
 def check_ticket(ticket, expected):
     """Returns (ok, list of failure strings)."""
     fails = [f"missing {k}" for k in REQUIRED if not ticket.get(k)]
+    text = json.dumps(ticket, ensure_ascii=False).lower()
     for k, v in expected.items():
         if k == "first_step_contains":
             if v.lower() not in (ticket.get("steps") or [""])[0].lower():
                 fails.append(f"steps[0] lacks '{v}'")
-        elif k in REQUIRED or k == "stock":
-            if str(v).lower() not in str(ticket.get(k, "")).lower():
-                fails.append(f"{k}: expected '{v}', got '{ticket.get(k)}'")
+        elif k == "cause_code":
+            if ticket.get("error_code") != v:
+                fails.append(f"error_code: expected {v}, got {ticket.get('error_code')}")
+        elif k == "must_contain":
+            if v.lower() not in text:
+                fails.append(f"lacks '{v}'")
+        elif k == "must_not_contain":
+            if v.lower() in text:
+                fails.append(f"contains '{v}'")
+        elif k == "note_contains":
+            if v.lower() not in str(ticket.get("note", "")).lower():
+                fails.append(f"note lacks '{v}'")
+        elif k == "recurring_flag":
+            if bool(ticket.get("recurring_fault")) != v:
+                fails.append(f"recurring_fault expected {v}")
+        elif k == "must_not_invent_part":
+            if str(ticket.get("part_needed", "")).lower() not in ("none", ""):
+                fails.append(f"invented part '{ticket.get('part_needed')}'")
+        elif str(v).lower() not in str(ticket.get(k, "")).lower():
+            fails.append(f"{k}: expected '{v}', got '{ticket.get(k)}'")
     return not fails, fails
