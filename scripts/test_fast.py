@@ -4,8 +4,10 @@ via strict json_schema; manual, inventory and recurring-fault lookups and the ti
 Usage:  python scripts/test_fast.py [--model MODEL] [--case T01]
 """
 import argparse
+import base64
 import json
 import time
+from pathlib import Path
 
 from common import (CASES, MANUAL, PRIMARY_MODEL, check_inventory, check_ticket, make_client,
                     recurring_faults, stock_fields, words)
@@ -82,7 +84,17 @@ def build_ticket(machine, error, inv, repeats):
     return ticket
 
 
-def run_fast(client, model, case, verbose=True):
+def user_content(case, audio_path=None):
+    if not audio_path:
+        return case["payload"]["transcript"]
+    data = base64.b64encode(Path(audio_path).read_bytes()).decode()
+    return [
+        {"type": "text", "text": "The technician's report is in this audio clip. Transcribe it into 'transcript'."},
+        {"type": "input_audio", "input_audio": {"data": data, "format": "wav"}},
+    ]
+
+
+def run_fast(client, model, case, audio_path=None, verbose=True):
     log = print if verbose else (lambda *a, **k: None)
     timings = []
     t_start = time.perf_counter()
@@ -92,7 +104,7 @@ def run_fast(client, model, case, verbose=True):
         model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": case["payload"]["transcript"]},
+            {"role": "user", "content": user_content(case, audio_path)},
         ],
         # Token Factory has no json_schema mode (structured_outputs: false) -> json_object + validate below
         response_format={"type": "json_object"},
@@ -141,11 +153,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=PRIMARY_MODEL)
     ap.add_argument("--case", default="T01")
+    ap.add_argument("--audio", help="WAV file to send as input_audio instead of the text transcript")
     args = ap.parse_args()
 
     case = CASES[args.case]
-    print(f"Variant B (single call)  Model: {args.model}  Case: {case['id']} - {case['payload']['transcript']}\n")
-    r = run_fast(make_client(), args.model, case)
+    src = f"audio {args.audio}" if args.audio else case["payload"]["transcript"]
+    print(f"Variant B (single call)  Model: {args.model}  Case: {case['id']} - {src}\n")
+    r = run_fast(make_client(), args.model, case, audio_path=args.audio)
     for name, dt in r["timings"]:
         print(f"  {name:<18} {dt * 1000:9.1f} ms")
     if r["ticket"] is None:
