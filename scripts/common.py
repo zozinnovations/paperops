@@ -17,8 +17,8 @@ load_dotenv(ROOT / ".env")
 from app.data import (CASES, HISTORY, INVENTORY, MANUAL, check_inventory, recurring_faults,  # noqa: E402,F401
                       search_manual, stock_fields, words)
 
-PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "MiMo-V2.6-Flash")
-FALLBACK_MODELS = [m for m in os.getenv("FALLBACK_MODELS", "Qwen3.8-27B,DeepSeek-V4-Flash").split(",") if m]
+PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "Gemma-4-31B-IT")
+FALLBACK_MODELS = [m for m in os.getenv("FALLBACK_MODELS", "MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash").split(",") if m]
 REQUIRED = ["machine", "priority", "cause", "part_needed", "location", "steps"]
 
 

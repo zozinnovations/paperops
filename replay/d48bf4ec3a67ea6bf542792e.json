@@ -1,8 +1,0 @@
-{
-  "model": "MiMo-V2.6-Flash",
-  "user": "CNC two, tool changer is stuck, magazine won't rotate.",
-  "system_sha": "f98b8b2d61007220",
-  "content": "{\"machine_id\": \"FZ-65\", \"error_code\": \"E-733\", \"cause\": \"Chips in the gripper\", \"part\": \"\", \"symptoms\": [\"tool changer stuck\", \"magazine won't rotate\"], \"transcript\": \"CNC two, tool changer is stuck, magazine won't rotate.\"}",
-  "seconds": 3.894,
-  "recorded": "2026-10-14T00:46:16"
-}

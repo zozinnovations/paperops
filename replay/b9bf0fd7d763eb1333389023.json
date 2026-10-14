@@ -1,8 +1,8 @@
 {
-  "model": "MiMo-V2.6-Flash",
+  "model": "Gemma-4-31B-IT",
   "user": "press three e four o two again",
   "system_sha": "f98b8b2d61007220",
   "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-402\", \"cause\": \"\", \"part\": \"\", \"symptoms\": [], \"transcript\": \"press three e four o two again\"}",
-  "seconds": 2.856,
-  "recorded": "2026-10-14T00:46:03"
+  "seconds": 3.751,
+  "recorded": "2026-10-14T13:49:51"
 }

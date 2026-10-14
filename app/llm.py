@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import APIStatusError, OpenAI
+from openai import APIStatusError, OpenAI, RateLimitError
 
 from .data import ROOT
 
@@ -20,11 +20,12 @@ load_dotenv(ROOT / ".env")
 log = logging.getLogger("paperops.llm")
 
 BASE_URL = os.getenv("RADEON_BASE_URL", "https://developer.amd.com.cn/radeon/api/v1")
-PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "MiMo-V2.6-Flash")
-FALLBACK_MODELS = [m.strip() for m in os.getenv("FALLBACK_MODELS", "Qwen3.8-27B,DeepSeek-V4-Flash").split(",") if m.strip()]
+PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "Gemma-4-31B-IT")  # Gemma 4 on AMD GPUs
+FALLBACK_MODELS = [m.strip() for m in os.getenv("FALLBACK_MODELS", "MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash").split(",") if m.strip()]
 REPLAY_MODE = os.getenv("REPLAY_MODE", "fallback")
-TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))   # per attempt
-BUDGET = float(os.getenv("LLM_BUDGET", "12"))     # all live attempts together, when a replay answer exists
+TIMEOUT = float(os.getenv("LLM_TIMEOUT", "15"))     # per model attempt; the next model in the chain is the retry
+BUDGET = float(os.getenv("LLM_BUDGET", "12"))       # all live attempts together, when a replay answer exists
+MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))  # all live attempts together, without a replay answer
 CACHE_DIR, REPLAY_DIR = ROOT / "cache", ROOT / "replay"
 
 class AllModelsFailed(RuntimeError):
@@ -33,7 +34,9 @@ class AllModelsFailed(RuntimeError):
 
 _client = None
 _available = None          # model ids from GET /v1/models
-_reasoning = {}            # model -> reasoning_effort that model accepts
+# model -> reasoning_effort it accepts. Default "none" = thinking off (Gemma: reasoning is only on/off;
+# MiMo/DeepSeek accept "none"); GLM-5.3-Flash only takes low/medium/high and is switched on first failure.
+_reasoning = {"GLM-5.3-Flash": "low"}
 
 
 def client():
@@ -120,7 +123,7 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
         return json.loads(hit["content"]), {"model": hit["model"], "replay": True, "attempts": attempts}
 
     # with a replay answer in reserve, a slow API must not keep judges waiting: cap all attempts at BUDGET
-    deadline = time.perf_counter() + (BUDGET if hit else 10_000)
+    deadline = time.perf_counter() + (BUDGET if hit else MAX_TOTAL)
     for model in models or chain():
         remaining = deadline - time.perf_counter()
         if remaining < 1:
@@ -128,7 +131,17 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
             break
         t0 = time.perf_counter()
         try:
-            resp = _call(model, system, user, max_tokens, timeout=min(TIMEOUT, remaining), retries=0 if hit else 1)
+            try:
+                resp = _call(model, system, user, max_tokens, timeout=min(TIMEOUT, remaining), retries=0)
+            except RateLimitError as e:
+                # the limit is per team key, so the next model would hit it too: honour Retry-After once
+                wait = float(e.response.headers.get("retry-after") or 2)
+                if wait > deadline - time.perf_counter() - 2:
+                    raise
+                log.warning("429 on %s, retrying after %.1f s", model, wait)
+                time.sleep(wait)
+                resp = _call(model, system, user, max_tokens,
+                             timeout=max(1.0, min(TIMEOUT, deadline - time.perf_counter())), retries=0)
             content = resp.choices[0].message.content or ""
             parsed = json.loads(content)
             validate(parsed)

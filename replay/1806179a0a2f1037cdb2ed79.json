@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "uh yeah so belt one stopped, the motor is just humming and it kind of smells burnt, no idea",
+  "system_sha": "f98b8b2d61007220",
+  "content": "{\"machine_id\": \"FB-12\", \"error_code\": \"E-301\", \"cause\": \"Belt overloaded\", \"part\": \"Ball bearing 6205-2RS\", \"symptoms\": [\"belt stopped\", \"motor humming\", \"burning smell from motor\"], \"transcript\": \"uh yeah so belt one stopped, the motor is just humming and it kind of smells burnt, no idea\"}",
+  "seconds": 4.925,
+  "recorded": "2026-10-14T13:49:41"
+}

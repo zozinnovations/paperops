@@ -1,8 +1,0 @@
-{
-  "model": "MiMo-V2.6-Flash",
-  "user": "uh yeah so belt one stopped, the motor is just humming and it kind of smells burnt, no idea",
-  "system_sha": "f98b8b2d61007220",
-  "content": "{\"machine_id\": \"FB-12\", \"error_code\": \"E-301\", \"cause\": \"Foreign object jammed\", \"part\": \"Ball bearing 6205-2RS\", \"symptoms\": [\"belt stopped\", \"motor humming\", \"burning smell from motor\"], \"transcript\": \"uh yeah so belt one stopped, the motor is just humming and it kind of smells burnt, no idea\"}",
-  "seconds": 4.605,
-  "recorded": "2026-10-14T00:45:56"
-}
