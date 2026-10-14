@@ -10,6 +10,11 @@ on:
     types: [completed]
     branches: ["main"]
 
+# one deployment at a time: a Dependabot merge and a push must not run `docker compose up` together
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 permissions:
   contents: read
   packages: write
