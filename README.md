@@ -37,7 +37,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 | View | URL | What you see |
 |---|---|---|
 | **Shop floor** | `/?mode=floor` | Only the big **HOLD TO SPEAK** button (mouse, touch, space bar or USB foot pedal), the progress and the printed ticket. This is the real product – and the view used in the video. |
-| **Demo for judges** (default) | `/` | The same worker area, plus a clearly separated panel **"For judges: try it without a microphone"**: *Play the demo report* (a recorded voice report), a text field and *Try a scenario* (6 main and 9 more test scenarios). Tabs: *Report a fault* and *Machine health (supervisor)*. *Reset demo* clears the recent tickets for a clean run. |
+| **Demo for judges** (default) | `/` | The same worker area, plus a clearly separated panel **"For judges: try it yourself"**: how to use your own voice (with the machines and fault codes you can mention), *Play the demo report* (a recorded voice report), a text field and *Try a scenario* (6 main and 9 more test scenarios). Tabs: *Report a fault* and *Machine health (supervisor)*. *Reset demo* clears the recent tickets for a clean run. |
 
 **How judges test:** open https://paperops.zozinnovations.com – no login. Click *Play the demo report*, or pick a scenario such as *Safety device fault* or *Part out of stock*. **With your own voice:** hold the orange button (or the space bar), allow the microphone and say the machine and the problem in English, e.g. "Press three is stuck, error E four oh two"; the panel lists the machines, their spoken names and fault codes. Works in current Chrome, Edge, Firefox and Safari (desktop and mobile).
 

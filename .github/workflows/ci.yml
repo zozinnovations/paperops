@@ -61,7 +61,7 @@ jobs:
 
       - name: Pages
         run: |
-          curl -fsS http://localhost:8000/ | grep -q "For judges: try it without a microphone"
+          curl -fsS http://localhost:8000/ | grep -q "For judges: try it yourself"
           curl -fsS "http://localhost:8000/?mode=floor" | grep -q '<body class="floor">'
           curl -fsS -o /dev/null http://localhost:8000/favicon.ico
 
