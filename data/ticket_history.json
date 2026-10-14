@@ -79,7 +79,7 @@
     },
     {
       "id": "ticket-929",
-      "ts": "2026-10-01T15:30:00+02:00",
+      "ts": "2026-10-03T08:30:00+02:00",
       "machine_id": "HP-400",
       "code": "E-402",
       "priority": "HIGH",
@@ -124,8 +124,8 @@
     }
   ],
   "expected_insights": [
-    "HP-400 / E-402: 3 times in 12 days (Sep 26, Oct 1, Oct 7), intervals getting shorter -> check root cause (supply line A3 or dosing pump P2) instead of just refilling oil.",
-    "SR-16 / E-910: 2 times in 9 days, wire feed roll stock is now 0 and not reordered -> trigger reorder.",
+    "HP-400 / E-402: 3 times in 12 days (Sep 26, Oct 3, Oct 7), intervals shrinking (7 -> 4 days) -> next E-402 expected in ~4 days (average interval 5.5 days after Oct 7, counted from the latest history entry on Oct 9); check dosing pump P2 and supply line A3, don't just refill oil.",
+    "SR-16 / E-910: 2 times in 10 days (Sep 24, Oct 3), wire feed roll stock is now 0 and not reordered -> trigger reorder.",
     "Hydraulic filter F1: stock 1 is below minimum stock 2."
   ]
 }
