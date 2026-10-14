@@ -1,8 +1,8 @@
 name: Build & Deploy (Docker)
 
 # Same flow as zoz-website: image to GHCR, then docker compose on the ZOZ server behind Traefik.
-# Repository secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_PORT, DEPLOY_PATH, RADEON_API_KEY
-# (optional GHCR_USERNAME / GHCR_TOKEN if the image is private).
+# Repository secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_PORT, DEPLOY_PATH (optional GHCR_USERNAME / GHCR_TOKEN
+# if the image is private). The API key is in DEPLOY_PATH/.env on the server, or in a RADEON_API_KEY secret.
 on:
   workflow_dispatch:
   workflow_run:
@@ -93,9 +93,15 @@ jobs:
             set -e
             cd "${{ secrets.DEPLOY_PATH }}"
 
-            # the API key lives only in this file on the server (mode 600), never in the repo
-            umask 077
-            printf 'RADEON_API_KEY=%s\n' "$RADEON_API_KEY" > .env
+            # the API key lives only in .env on the server, never in the repo. An existing .env is never
+            # overwritten; it is only created (mode 600) from the RADEON_API_KEY secret when missing.
+            if [ ! -f .env ]; then
+              if [ -z "$RADEON_API_KEY" ]; then
+                echo "No .env in $PWD and no RADEON_API_KEY secret - create one of them first." && exit 1
+              fi
+              umask 077
+              printf 'RADEON_API_KEY=%s\n' "$RADEON_API_KEY" > .env
+            fi
 
             # Optional: only needed if the GHCR image is private
             if [ -n "$GHCR_TOKEN" ]; then

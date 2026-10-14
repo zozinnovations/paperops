@@ -117,10 +117,10 @@ The live app runs at **https://paperops.zozinnovations.com** on the ZOZ Innovati
 | Workflow | What it does |
 |---|---|
 | `ci.yml` | on every push and pull request: builds the image and tests it end to end **without an API key** (`REPLAY_MODE=always`): a voice sample through Whisper to a ticket, a CRITICAL text report, a nonsense report that must ask back, both views |
-| `deploy.yml` | after a green CI run on `main`: pushes the image to `ghcr.io/zozinnovations/paperops`, copies `deploy/docker-compose.yml` to the server, writes the API key into the server's `.env` (mode 600), runs `docker compose pull && up -d` and waits until the container is healthy |
+| `deploy.yml` | after a green CI run on `main`: pushes the image to `ghcr.io/zozinnovations/paperops`, copies `deploy/docker-compose.yml` to the server, runs `docker compose pull && up -d` and waits until the container is healthy |
 | `dependabot-automerge.yml` | merges Dependabot updates (pip, Docker, GitHub Actions – weekly, see `.github/dependabot.yml`) once CI has passed on exactly the tested commit, then deploys |
 
-`deploy/docker-compose.yml` joins the server's `web-network` and carries the Traefik labels for `paperops.zozinnovations.com`, plus the same hardening as locally (read-only file system, no Linux capabilities, non-root user). Repository secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`, `DEPLOY_PATH`, `RADEON_API_KEY` (optional `GHCR_USERNAME` / `GHCR_TOKEN` for a private image). Without the SSH secrets the workflow only builds the image and skips the deployment.
+`deploy/docker-compose.yml` joins the server's `web-network` and carries the Traefik labels for `paperops.zozinnovations.com`, plus the same hardening as locally (read-only file system, no Linux capabilities, non-root user). Repository secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`, `DEPLOY_PATH` (optional `GHCR_USERNAME` / `GHCR_TOKEN` for a private image). The API key stays in `DEPLOY_PATH/.env` on the server; an existing `.env` is never overwritten (a `RADEON_API_KEY` secret is only used to create it when it is missing). Without the SSH secrets the workflow only builds the image and skips the deployment.
 
 **Hosting it elsewhere:** any machine that runs Docker with ~2 GB RAM, behind any HTTPS reverse proxy. The image listens on `$PORT` (default 8000) and serves `/api/health` for health checks; set `PUBLIC_URL` and keep `ALLOW_PRINTER_SETUP=0` on public servers. Serverless platforms do not fit: the speech model stays in memory in a long-running process.
 
