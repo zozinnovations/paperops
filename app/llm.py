@@ -26,7 +26,8 @@ PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "Gemma-4-31B-IT")  # Gemma 4 on AMD G
 FALLBACK_MODELS = [m.strip() for m in os.getenv("FALLBACK_MODELS", "MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash").split(",") if m.strip()]
 REPLAY_MODE = os.getenv("REPLAY_MODE", "fallback")
 TIMEOUT = float(os.getenv("LLM_TIMEOUT", "15"))       # per model request
-HEDGE_AFTER = float(os.getenv("LLM_HEDGE_AFTER", "6"))  # start the first fallback if the primary has not answered
+RACE = int(os.getenv("LLM_RACE", "2"))                  # the first N models of the chain start at once (Gemma + MiMo)
+HEDGE_AFTER = float(os.getenv("LLM_HEDGE_AFTER", "6"))  # the next fallback starts if none of them has answered by then
 HEDGE_STEP = float(os.getenv("LLM_HEDGE_STEP", "3"))    # ... and each further fallback this much later
 BUDGET = float(os.getenv("LLM_BUDGET", "16"))         # all live attempts together, when a replay answer exists
 MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))    # all live attempts together, without a replay answer
@@ -147,10 +148,11 @@ def _attempt(model, system, user, validate, max_tokens, deadline):
 def json_call(system, user, validate, max_tokens=400, models=None, replay_for=None):
     """Returns (parsed, info). validate(parsed) raises ValueError on bad output.
 
-    Hedged fallback chain: the primary model starts at once; if it has not answered after HEDGE_AFTER
-    seconds the first fallback starts too (without cancelling the primary), then one more every HEDGE_STEP
-    seconds - or at once when every running request has failed. The first valid answer wins. Only when no
-    model has answered within the budget does a recorded run from replay/ step in.
+    Race + hedged fallback chain: the first RACE models (Gemma and MiMo) start at the same time and the first
+    valid answer wins, so latency is that of the faster model (Gemma is credited whenever it answers first).
+    If none has answered after HEDGE_AFTER seconds the next fallback starts too (nothing is cancelled), then
+    one more every HEDGE_STEP seconds - or at once when every running request has failed. Only when no model
+    has answered within the budget does a recorded run from replay/ step in.
 
     replay_for: the canonical text of a sample recording, so a sample replays even when Whisper's
     transcript differs slightly from the stored one."""
@@ -171,7 +173,8 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
             if queue and (now >= next_start or not running):
                 model = queue.pop(0)
                 running[pool.submit(_attempt, model, system, user, validate, max_tokens, deadline)] = (model, now)
-                next_start = now + (HEDGE_AFTER if len(running) + len(attempts) == 1 else HEDGE_STEP)
+                launched = len(running) + len(attempts)
+                next_start = now + (0 if launched < RACE else HEDGE_AFTER if launched == RACE else HEDGE_STEP)
                 continue
             wake = min(deadline, next_start) if queue else deadline
             done, _ = wait(running, timeout=max(0.05, wake - now), return_when=FIRST_COMPLETED)
