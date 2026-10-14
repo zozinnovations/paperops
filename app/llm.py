@@ -186,8 +186,9 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
                     continue
                 _cache_put(model, system, user, content, seconds)
                 total = time.perf_counter() - start
+                others = [f"{a['model']} failed" for a in attempts] + [f"{m} still running" for m, _ in running.values()]
                 log.info("answered by %s in %.1f s (%.1f s after start)%s", model, seconds, total,
-                         f", after {len(attempts)} failed/slower" if attempts or running else "")
+                         f" - {', '.join(others)}" if others else "")
                 return parsed, {"model": model, "replay": False, "attempts": attempts, "seconds": total,
                                 "still_running": [m for m, _ in running.values()]}
     finally:
