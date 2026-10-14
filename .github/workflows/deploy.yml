@@ -108,6 +108,12 @@ jobs:
               echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             fi
 
+            if docker inspect paperops >/dev/null 2>&1; then
+              COMPOSE_PROJECT_NAME=$(docker inspect paperops --format '{{index .Config.Labels "com.docker.compose.project"}}')
+              test -n "$COMPOSE_PROJECT_NAME"
+              export COMPOSE_PROJECT_NAME
+            fi
+            docker compose config --quiet
             docker compose pull
             docker compose up -d
             docker image prune -f
