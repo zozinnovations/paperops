@@ -41,7 +41,8 @@
   // "Gemma 4 on AMD GPUs" for Gemma, otherwise the model id (e.g. after a fallback)
   // short line in the header, details in the tooltip
   function setModelBadge(model, replay) {
-    const name = /^Gemma-4/i.test(model) ? "Gemma 4" : model;
+    const plain = String(model).split("/").pop();  // "self-dploy/Gemma-4-31B-IT" -> "Gemma-4-31B-IT"
+    const name = /^Gemma-4/i.test(plain) ? "Gemma 4" : plain;
     const badge = $("model-status");
     badge.textContent = `AI: ${name} on AMD${replay ? " (replay)" : ""}`;
     badge.title = `${model} on AMD GPUs via AMD Token Factory` +

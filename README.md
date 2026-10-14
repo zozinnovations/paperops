@@ -30,7 +30,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 | Safety step first | **100 %** of printed tickets – one black safety block before any repair step, taken from the manual, never from the model |
 | Part location | **every** ticket that needs a part shows its shelf location (10 / 10), with an approved alternative when the original is out of stock |
 | Unclear reports | nothing is printed for nonsense or an unknown machine – the screen asks back ("Which machine?") instead of guessing |
-| Time from voice to ticket | **typically under 10 s** (speech-to-text ~0.5 s + Gemma typically 2–5 s), slower when the Token Factory is busy |
+| Time from voice to ticket | **typically 3–5 s** (speech-to-text ~0.5 s + Gemma 1.5–3.3 s on the 15 test cases), slower when the Token Factory is busy |
 
 ## Two views
 
@@ -53,7 +53,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 8. **Recurring faults** – e.g. E-402 on HP-400: "3rd time in 12 days (4× in 30 days) – check dosing pump P2 and supply line A3, don't just refill oil".
 9. **Machine health (supervisor tab)** – per machine: reports and downtime in the last 30 days, the repeated fault and a *trend-based estimate*: a fault that comes back faster ("next E-402 expected in ~4 days", intervals 7 → 4 days), a part for a recurring fault that is out of stock and not reordered, parts below minimum stock. Counted on a fixed demo clock (`DEMO_NOW`, default: the latest history entry), so the demo data does not age out.
 
-**Resilience:** the app checks `GET /v1/models` at startup and validates every answer. Gemma and MiMo-V2.6-Flash start **at the same time** and the first valid answer wins – so the latency is that of the faster model, and Gemma answers in most cases. If neither has answered after 6 s, GLM-5.3-Flash and then DeepSeek-V4.1-Flash join. Only if no model answered within `LLM_BUDGET` (**16 s**) does a recorded real run from `replay/` step in – clearly labelled "Replay of a recorded live run" with its original timing. `REPLAY_MODE=always` gives a fully offline demo, `off` disables replay.
+**Resilience:** the app checks `GET /v1/models` at startup (model ids are matched with or without a provider prefix such as `self-dploy/`) and validates every answer strictly – the only tolerance is one Markdown code fence around otherwise valid JSON. Gemma answers alone (15/15 test cases, 1.5–3.3 s); the fallbacks are a safety net: if Gemma has not answered after 5 s, MiMo-V2.6-Flash starts as well (the first valid answer wins), then GLM-5.3-Flash and DeepSeek-V4.1-Flash. Only if no model answered within `LLM_BUDGET` (**16 s**) does a recorded real run from `replay/` step in – clearly labelled "Replay of a recorded live run" with its original timing. `REPLAY_MODE=always` gives a fully offline demo, `off` disables replay.
 
 ## Install and run
 
@@ -129,7 +129,7 @@ The live app runs at **https://paperops.zozinnovations.com** on the ZOZ INNOVATI
 | Variable | Default | Meaning |
 |---|---|---|
 | `RADEON_API_KEY` | – | AMD Token Factory key (required) |
-| `PRIMARY_MODEL` / `FALLBACK_MODELS` | `Gemma-4-31B-IT` / `MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash` | model chain; the first two race |
+| `PRIMARY_MODEL` / `FALLBACK_MODELS` | `Gemma-4-31B-IT` / `MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash` | model chain; Gemma alone, fallbacks join after `LLM_HEDGE_AFTER` (5 s) |
 | `WHISPER_MODEL` | `base.en` | speech-to-text model (`small.en`: ~1.5 s, same accuracy on our samples) |
 | `REPLAY_MODE` | `fallback` | `off`, `fallback` (only if no model answered within `LLM_BUDGET`), `always` (offline demo) |
 | `LLM_BUDGET` / `LLM_MAX_TOTAL` | `16` / `30` s | time for the live models with / without a recorded run in reserve |
