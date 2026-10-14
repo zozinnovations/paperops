@@ -34,8 +34,10 @@ RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MIN", "10"))  # per client IP; the te
 SAMPLES = ROOT / "samples"
 STATIC = Path(__file__).resolve().parent / "static"
 
-_ASSET_VERSION = hashlib.sha256(b"".join((STATIC / n).read_bytes() for n in ("app.js", "escpos.js", "style.css"))
-                                ).hexdigest()[:10]
+# content hash of everything the page references, so caches (browser, Cloudflare) pick up a new deploy at once
+_VERSIONED = ("app.js", "escpos.js", "style.css", "zoz-logo.svg", "og.png", "favicon.ico", "apple-touch-icon.png")
+_ASSET_VERSION = hashlib.sha256(b"".join((STATIC / n).read_bytes() for n in _VERSIONED)).hexdigest()[:10]
+_ICON_CACHE = {"Cache-Control": "public, max-age=3600"}  # unversioned /favicon.ico: at most 1 h stale
 
 app = FastAPI(title="PaperOps")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -95,10 +97,12 @@ def index(request: Request, mode: str = ""):
     # versioned asset URLs: a browser that cached an old escpos.js before no-cache headers existed would
     # still mis-render new printer commands (e.g. ESC 3 shown as a box)
     html = (STATIC / "index.html").read_text(encoding="utf-8")
-    for name in ("app.js", "escpos.js", "style.css"):
-        html = html.replace(f"/static/{name}\"", f"/static/{name}?v={_ASSET_VERSION}\"")
+    for path in ("/static/app.js", "/static/escpos.js", "/static/style.css", "/static/zoz-logo.svg",
+                 "/favicon.ico", "/apple-touch-icon.png"):
+        html = html.replace(f"{path}\"", f"{path}?v={_ASSET_VERSION}\"")
     # link previews need an absolute image URL
-    html = html.replace("__OG_IMAGE__", f"{PUBLIC_URL or str(request.base_url).rstrip('/')}/static/og.png")
+    html = html.replace("__OG_IMAGE__",
+                        f"{PUBLIC_URL or str(request.base_url).rstrip('/')}/static/og.png?v={_ASSET_VERSION}")
     if mode == "floor":
         # shop-floor mode: only the button, progress and the receipt (set server-side, so nothing flashes)
         html = html.replace("<body>", '<body class="floor">', 1)
@@ -107,12 +111,12 @@ def index(request: Request, mode: str = ""):
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
-    return FileResponse(STATIC / "favicon.ico", media_type="image/x-icon")
+    return FileResponse(STATIC / "favicon.ico", media_type="image/x-icon", headers=_ICON_CACHE)
 
 
 @app.get("/apple-touch-icon.png", include_in_schema=False)
 def apple_touch_icon():
-    return FileResponse(STATIC / "apple-touch-icon.png", media_type="image/png")
+    return FileResponse(STATIC / "apple-touch-icon.png", media_type="image/png", headers=_ICON_CACHE)
 
 
 @app.get("/api/printer")
