@@ -17,7 +17,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.paperops.rule=Host(`paperops.zozinnovations.com`)"
       - "traefik.http.routers.paperops.entrypoints=websecure"
-      - "traefik.http.routers.paperops.tls.certresolver=myresolver"
+      - "traefik.http.routers.paperops.tls.certresolver=cloudflare"
       - "traefik.http.services.paperops.loadbalancer.server.port=8000"
     # security hardening: read-only root filesystem, no Linux capabilities, no privilege escalation
     read_only: true
