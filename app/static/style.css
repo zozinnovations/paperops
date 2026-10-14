@@ -62,6 +62,30 @@ h1 { margin: 0; font-size: 21px; letter-spacing: .01em; line-height: 1.2; }
 #printer-status[data-state="simulator"] .dot { background: var(--accent); }
 #printer-status[data-state="offline"] .dot { background: var(--critical); }
 
+.pill-btn { cursor: pointer; color: var(--text); font: inherit; font-size: 13px; }
+.pill-btn:hover:not(:disabled), .pill-btn:focus-visible { border-color: var(--accent); }
+.pill-btn:disabled { color: var(--muted); cursor: not-allowed; opacity: .7; }
+
+/* ---------- printer settings dialog ---------- */
+.dialog {
+  width: min(440px, calc(100vw - 32px)); padding: 22px; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--panel); color: var(--text);
+}
+.dialog::backdrop { background: rgb(0 0 0 / .6); }
+.dialog h2 { margin: 0 0 6px; font-size: 18px; }
+.dlg-note { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.field { display: grid; gap: 4px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+.field input {
+  padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: 15px var(--sans);
+}
+.field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dlg-status { min-height: 1.4em; margin: 0 0 12px; font-size: 13.5px; }
+.dlg-status[data-kind="ok"] { color: var(--ok); }
+.dlg-status[data-kind="bad"] { color: #ffb4b6; }
+.dlg-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #1b1206; }
+.btn-primary:hover:not(:disabled) { background: #ff9c45; }
+
 /* ---------- tabs (judges' demo only) ---------- */
 .tabs { display: flex; gap: 4px; padding: 12px 24px 0; max-width: 1400px; width: 100%; margin: 0 auto; }
 .tab {

@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
+from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
@@ -115,6 +115,43 @@ def apple_touch_icon():
     return FileResponse(STATIC / "apple-touch-icon.png", media_type="image/png")
 
 
+@app.get("/api/printer")
+def api_printer_get():
+    cfg = printer.config()
+    return {"enabled": printer.ALLOW_SETUP, "host": cfg["host"], "port": cfg["port"], "status": printer.status()}
+
+
+@app.post("/api/printer")
+def api_printer_set(request: Request, settings: dict = Body(...)):
+    """Printer settings dialog: only with ALLOW_PRINTER_SETUP=1, only local-network targets."""
+    if not printer.ALLOW_SETUP:
+        raise HTTPException(403, "Printer setup is disabled on this server.")
+    if _rate_limited(request.client.host if request.client else "?"):
+        raise HTTPException(429, "Too many requests - please wait a minute.")
+    try:
+        port = int(settings.get("port") or 9100)
+        state = printer.configure(str(settings.get("host") or ""), port)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(400, str(e) if isinstance(e, ValueError) else "Invalid settings.")
+    cfg = printer.config()
+    log.info("printer settings changed: %s", f"{cfg['host']}:{cfg['port']}" if cfg["host"] else "simulator")
+    return {"enabled": True, "host": cfg["host"], "port": cfg["port"], "status": state}
+
+
+@app.post("/api/printer/test")
+def api_printer_test(request: Request):
+    if not printer.ALLOW_SETUP:
+        raise HTTPException(403, "Printer setup is disabled on this server.")
+    if _rate_limited(request.client.host if request.client else "?"):
+        raise HTTPException(429, "Too many requests - please wait a minute.")
+    cfg = printer.config()
+    if not cfg["host"]:
+        return {"result": "simulator", "message": "No printer set - tickets appear in the on-screen simulator."}
+    result = printer.send(escpos.test_page(f"{cfg['host']}:{cfg['port']}", demo_stamp()))
+    return {"result": result, "message": "Test page sent." if result == "printed"
+            else f"Printer {cfg['host']}:{cfg['port']} is not reachable."}
+
+
 @app.post("/api/reset")
 def api_reset(request: Request):
     """Reset demo: clear recent tickets and drafts, numbering restarts at the first number after the history."""
@@ -131,7 +168,8 @@ def api_reset(request: Request):
 @app.get("/api/status")
 def api_status():
     models = llm.chain()  # while the model list is unknown this also retries discovery in the background
-    return {"printer": printer.status(), "printer_host": printer.PRINTER_HOST or None,
+    return {"printer": printer.status(), "printer_host": printer.config()["host"] or None,
+            "printer_setup": printer.ALLOW_SETUP,
             "models": models if llm._available is not None else [], "stt": stt.BACKEND,
             "replay_mode": llm.REPLAY_MODE}
 

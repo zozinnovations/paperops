@@ -32,8 +32,28 @@
     <div class="status">
       <span class="pill" id="printer-status"><span class="dot"></span><span class="label">Printer: …</span></span>
       <span class="pill subtle" id="model-status">AI: …</span>
+      <button class="pill pill-btn judges-only" id="printer-settings" type="button" disabled>Printer settings</button>
     </div>
   </header>
+
+  <dialog class="dialog" id="printer-dialog" aria-labelledby="printer-title">
+    <form id="printer-form" method="dialog">
+      <h2 id="printer-title">Printer settings</h2>
+      <p class="dlg-note">ESC/POS thermal printer on your network (raw TCP, usually port 9100). Leave the address empty to use the on-screen simulator.</p>
+      <label class="field">IP address or host name
+        <input id="printer-host" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="192.168.1.50">
+      </label>
+      <label class="field">Port
+        <input id="printer-port" type="number" min="1" max="65535" value="9100">
+      </label>
+      <p class="dlg-status" id="printer-dlg-status" role="status"></p>
+      <div class="dlg-actions">
+        <button class="btn" id="printer-test" type="button">Test print</button>
+        <button class="btn btn-primary" id="printer-save" type="submit">Save</button>
+        <button class="btn" id="printer-close" type="button">Close</button>
+      </div>
+    </form>
+  </dialog>
 
   <nav class="tabs judges-only" role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="tab-dispatch" aria-selected="true" aria-controls="view-dispatch" type="button">Report a fault</button>

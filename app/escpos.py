@@ -72,6 +72,13 @@ def _qr(data):
             + GS + b"(k\x03\x001Q0")            # print
 
 
+def test_page(target, created):
+    """Short page for "Test print" in the printer settings."""
+    return b"".join([INIT, ALIGN_CENTER, SIZE_DOUBLE, BOLD_ON, _line("PAPEROPS"), BOLD_OFF, SIZE_NORMAL,
+                     _line("Printer test"), _line("-" * WIDTH), _line(f"Target: {target}"), _line(created),
+                     LF, *_block(["If you can read this, the printer is ready.".center(WIDTH)]), LF * 3, CUT])
+
+
 def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
     out = [INIT, ALIGN_CENTER, BOLD_ON, _line("PAPEROPS  REPAIR TICKET"), BOLD_OFF]
     if ticket_id is not None:

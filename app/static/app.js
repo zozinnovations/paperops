@@ -26,6 +26,10 @@
       p.dataset.state = s.printer;
       p.querySelector(".label").textContent =
         s.printer === "connected" ? "Printer: connected" : s.printer === "offline" ? "Printer: offline (simulator)" : "Printer: simulator";
+      const setupBtn = $("printer-settings");
+      setupBtn.disabled = !s.printer_setup;
+      setupBtn.title = s.printer_setup ? "Printer address, port and test print"
+        : "Disabled on the hosted demo. On a local install set ALLOW_PRINTER_SETUP=1.";
       if (s.models.length) { primaryModel = s.models[0]; setModelBadge(s.models[0]); }
       else $("model-status").textContent = "AI: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
@@ -316,6 +320,48 @@
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     showTab($("tab-health").getAttribute("aria-selected") === "true" ? "dispatch" : "health", true);
   });
+
+  // ---------- printer settings (local installs only: ALLOW_PRINTER_SETUP=1) ----------
+  const dlg = $("printer-dialog");
+  const dlgStatus = (text, kind) => { $("printer-dlg-status").textContent = text; $("printer-dlg-status").dataset.kind = kind || ""; };
+  const STATE_TEXT = { connected: "Printer connected.", offline: "Printer not reachable - check address, port and power.",
+                       simulator: "No printer set - tickets appear in the on-screen simulator." };
+  async function printerCall(url, body) {
+    const res = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+                                      : url.endsWith("/test") ? { method: "POST" } : {});
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.detail || res.statusText);
+    return json;
+  }
+  $("printer-settings").addEventListener("click", async () => {
+    dlgStatus("Checking…");
+    dlg.showModal();
+    try {
+      const p = await printerCall("/api/printer");
+      $("printer-host").value = p.host;
+      $("printer-port").value = p.port;
+      dlgStatus(STATE_TEXT[p.status] || p.status, p.status === "connected" ? "ok" : p.status === "offline" ? "bad" : "");
+    } catch (e) { dlgStatus(e.message, "bad"); }
+    $("printer-host").focus();
+  });
+  $("printer-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    dlgStatus("Saving…");
+    try {
+      const p = await printerCall("/api/printer", { host: $("printer-host").value.trim(), port: Number($("printer-port").value) });
+      dlgStatus(`Saved. ${STATE_TEXT[p.status] || p.status}`, p.status === "connected" ? "ok" : p.status === "offline" ? "bad" : "");
+      loadStatus();
+    } catch (err) { dlgStatus(err.message, "bad"); }
+  });
+  $("printer-test").addEventListener("click", async () => {
+    dlgStatus("Sending test page…");
+    try {
+      const r = await printerCall("/api/printer/test");
+      dlgStatus(r.message, r.result === "printed" ? "ok" : r.result === "simulator" ? "" : "bad");
+      loadStatus();
+    } catch (err) { dlgStatus(err.message, "bad"); }
+  });
+  $("printer-close").addEventListener("click", () => dlg.close());
 
   // ---------- reset demo (clean video takes) ----------
   $("reset-demo").addEventListener("click", async () => {
