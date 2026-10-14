@@ -198,6 +198,7 @@ body.busy .btn-demo, body.busy .sample { opacity: .55; cursor: progress; }
 .receipt .align-center { text-align: center; }
 .receipt .b { font-weight: 800; }
 .receipt .dbl { font-size: 2em; line-height: 1.1; }
+.receipt .tall-line { height: 2.7em; display: flex; align-items: center; }
 .receipt .tall { display: inline-block; transform: scaleY(2); }
 .receipt .inv { color: #fff; background: var(--ink); margin: 2px -4px; padding: 2px 4px; white-space: pre-wrap; }
 .receipt .inv.prio-critical { background: var(--critical); }

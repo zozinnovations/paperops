@@ -152,6 +152,7 @@
       el.classList.add("inv", PRIO_CLASS(el.textContent) || "inv-dark");
     }
     if (line.segments.some((s) => s.double)) el.classList.add("dbl-line");
+    if (line.segments.some((s) => s.tall && !s.double)) el.classList.add("tall-line");
     return el;
   }
 

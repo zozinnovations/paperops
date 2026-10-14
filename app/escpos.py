@@ -72,8 +72,11 @@ def render(ticket, ticket_id=None, created=None, footer=None):
     part = ticket.get("part_needed", "none")
     if part and part.lower() != "none":
         out += [BOLD_ON, _line("PART"), BOLD_OFF, *map(_line, _wrap(part))]
-        out += [SIZE_DOUBLE, BOLD_ON, *map(_line, _wrap(ticket.get("location", "-").upper(), WIDTH // 2)),
-                BOLD_OFF, SIZE_NORMAL]
+        loc = ascii_text(ticket.get("location", "-").upper())
+        # double width + height fits 24 columns; longer locations stay one line at double height only
+        size = SIZE_DOUBLE if len(loc) <= WIDTH // 2 else SIZE_TALL
+        width = WIDTH // 2 if size == SIZE_DOUBLE else WIDTH
+        out += [size, BOLD_ON, *map(_line, _wrap(loc, width)), BOLD_OFF, SIZE_NORMAL]
         if ticket.get("stock"):
             out.append(_line(ticket["stock"]))
     else:
