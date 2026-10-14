@@ -6,6 +6,15 @@
   const MIN_RECORD_MS = 400;
 
   let busy = false;
+
+  // keeps ?mode=floor (shop-floor view) when the ticket id or the tab changes
+  function setUrl({ ticket, hash } = {}) {
+    const q = new URLSearchParams(location.search);
+    if (ticket === null) q.delete("ticket");
+    else if (ticket !== undefined) q.set("ticket", ticket);
+    const qs = q.toString();
+    history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : "") + (hash !== undefined ? hash : location.hash));
+  }
   let primaryModel = null;
   let current = null; // last result shown on the receipt
 
@@ -18,7 +27,7 @@
       p.querySelector(".label").textContent =
         s.printer === "connected" ? "Printer: connected" : s.printer === "offline" ? "Printer: offline (simulator)" : "Printer: simulator";
       if (s.models.length) { primaryModel = s.models[0]; setModelBadge(s.models[0]); }
-      else $("model-status").textContent = "AI on AMD: connecting…";
+      else $("model-status").textContent = "AI: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
     } catch {
       setTimeout(loadStatus, 5000);
@@ -26,11 +35,14 @@
   }
 
   // "Gemma 4 on AMD GPUs" for Gemma, otherwise the model id (e.g. after a fallback)
+  // short line in the header, details in the tooltip
   function setModelBadge(model, replay) {
     const name = /^Gemma-4/i.test(model) ? "Gemma 4" : model;
     const badge = $("model-status");
-    badge.textContent = `${name} on AMD GPUs${replay ? " (replay)" : ""}`;
-    badge.title = `Model ${model} via AMD Token Factory`;
+    badge.textContent = `AI: ${name} on AMD${replay ? " (replay)" : ""}`;
+    badge.title = `${model} on AMD GPUs via AMD Token Factory` +
+      (primaryModel && model !== primaryModel ? ` (fallback for ${primaryModel})` : "") +
+      (replay ? " - replay of a recorded live run" : "");
   }
 
   // ---------- progress ----------
@@ -217,7 +229,7 @@
       `\n\n${bytes.length} bytes`;
     $("download").disabled = false;
     $("print").disabled = false;
-    history.replaceState(null, "", `?ticket=${result.id}`);
+    setUrl({ ticket: result.id });
   }
 
   // Scale the font so exactly 48 monospace columns fit the paper (character width varies by font).
@@ -300,13 +312,30 @@
     }
     if (focus) $(TABS[name][0]).focus();
     if (name === "health") loadMachines();
-    history.replaceState(null, "", name === "health" ? "#health" : location.pathname + location.search);
+    setUrl({ hash: name === "health" ? "#health" : "" });
   }
   $("tab-dispatch").addEventListener("click", () => showTab("dispatch"));
   $("tab-health").addEventListener("click", () => showTab("health"));
   document.querySelector(".tabs").addEventListener("keydown", (e) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     showTab($("tab-health").getAttribute("aria-selected") === "true" ? "dispatch" : "health", true);
+  });
+
+  // ---------- reset demo (clean video takes) ----------
+  $("reset-demo").addEventListener("click", async () => {
+    if (busy) return;
+    const res = await fetch("/api/reset", { method: "POST" });
+    if (!res.ok) return showError("Reset failed - please try again.");
+    current = null;
+    $("receipt").innerHTML = '<p class="placeholder">Your repair ticket prints here.</p>';
+    $("paper").classList.add("idle");
+    $("cmd-list").textContent = "";
+    $("download").disabled = $("print").disabled = true;
+    resetProgress();
+    showHeard("");
+    setUrl({ ticket: null });
+    loadRecent();
+    loadMachines();
   });
 
   // ---------- samples + text ----------

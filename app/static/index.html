@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PaperOps</title>
-  <meta name="description" content="Voice-driven maintenance dispatcher: press, speak, get a printed repair ticket.">
+  <meta name="description" content="Voice-driven maintenance dispatcher: press, speak, get a printed repair ticket. Gemma 4 on AMD GPUs via AMD Token Factory.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='2' fill='%23f5f1e8'/%3E%3Crect x='6' y='7' width='20' height='5' fill='%23f08c2e'/%3E%3Crect x='9' y='15' width='14' height='2' fill='%23222'/%3E%3Crect x='9' y='19' width='10' height='2' fill='%23222'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,23 +16,24 @@
     <div class="brand">
       <span class="logo" aria-hidden="true"></span>
       <div>
-        <h1>PaperOps</h1>
-        <p class="tagline">Press. Speak. Fix.</p>
+        <h1>PaperOps <span class="tagline">Press. Speak. Fix.</span></h1>
+        <p class="by">by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ Innovations</a></p>
       </div>
     </div>
     <div class="status">
       <span class="pill" id="printer-status"><span class="dot"></span><span class="label">Printer: …</span></span>
-      <span class="pill subtle" id="model-status">AI on AMD: …</span>
+      <span class="pill subtle" id="model-status">AI: …</span>
     </div>
   </header>
 
-  <nav class="tabs" role="tablist" aria-label="Views">
-    <button class="tab" role="tab" id="tab-dispatch" aria-selected="true" aria-controls="view-dispatch" type="button">Dispatcher</button>
-    <button class="tab" role="tab" id="tab-health" aria-selected="false" aria-controls="view-health" type="button" tabindex="-1">Machine health</button>
+  <nav class="tabs judges-only" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-dispatch" aria-selected="true" aria-controls="view-dispatch" type="button">Report a fault</button>
+    <button class="tab" role="tab" id="tab-health" aria-selected="false" aria-controls="view-health" type="button" tabindex="-1">Machine health (supervisor)</button>
   </nav>
 
   <main class="layout" id="view-dispatch" role="tabpanel" aria-labelledby="tab-dispatch">
-    <section class="input-panel" aria-label="Report a fault">
+    <!-- worker area: identical in shop-floor mode (?mode=floor) and in the judges' demo -->
+    <section class="input-panel worker" aria-label="Report a fault by voice">
       <div class="ptt-wrap">
         <button id="ptt" class="ptt" type="button" aria-label="Hold to speak" aria-pressed="false" aria-describedby="ptt-hint">
           <span class="ptt-ring" aria-hidden="true"></span>
@@ -41,10 +42,6 @@
           <span class="ptt-timer" id="ptt-timer"></span>
         </button>
         <p class="hint" id="ptt-hint">Hold the button, the <kbd>Space</kbd> bar or the foot pedal while you speak.</p>
-        <button id="demo" class="btn btn-demo" type="button">
-          <span class="play" aria-hidden="true"></span>Play the demo report
-        </button>
-        <p class="hint demo-caption">“Press three is stuck. Error E four oh two. The axis is running hot.” Recorded voice, no microphone needed.</p>
       </div>
 
       <p class="heard" id="heard" hidden></p>
@@ -57,33 +54,12 @@
 
       <ol class="progress" id="progress" aria-label="Progress">
         <li data-step="listening"><span class="icon"></span><span class="name">Listening</span><span class="ms"></span></li>
-        <li data-step="understanding"><span class="icon"></span><span class="name">Understanding</span><span class="ms"></span></li>
+        <li data-step="understanding"><span class="icon"></span><span class="name">Finding the fault</span><span class="ms"></span></li>
         <li data-step="manual"><span class="icon"></span><span class="name">Manual</span><span class="ms"></span></li>
         <li data-step="stock"><span class="icon"></span><span class="name">Stock</span><span class="ms"></span></li>
         <li data-step="printing"><span class="icon"></span><span class="name">Printing</span><span class="ms"></span></li>
       </ol>
       <p class="total" id="total" hidden></p>
-
-      <div class="tester">
-        <h2>No microphone? Type a report</h2>
-        <form id="text-form" class="text-form">
-          <label for="text-input" class="sr-only">Fault report</label>
-          <input id="text-input" type="text" maxlength="500" autocomplete="off"
-                 placeholder="e.g. Press three is stuck. Error E four oh two.">
-          <button type="submit" class="btn">Create ticket</button>
-        </form>
-        <h2 class="scenarios-title">Try a scenario</h2>
-        <div class="samples" id="samples"></div>
-        <details class="more">
-          <summary>More scenarios</summary>
-          <div class="samples" id="samples-more"></div>
-        </details>
-      </div>
-
-      <div class="recent">
-        <h2>Recent tickets</h2>
-        <ul id="recent"><li class="empty">No tickets yet.</li></ul>
-      </div>
     </section>
 
     <section class="output-panel" aria-label="Printed ticket">
@@ -108,6 +84,39 @@
         <pre id="cmd-list"></pre>
       </div>
     </section>
+
+    <!-- judges' panel: not part of the shop-floor product -->
+    <section class="judges judges-only" aria-labelledby="judges-title">
+      <h2 id="judges-title">For judges: try it without a microphone</h2>
+      <p class="judges-sub">On the shop floor, workers only use the button or foot pedal. This panel is for testing.</p>
+
+      <button id="demo" class="btn btn-demo" type="button">
+        <span class="play" aria-hidden="true"></span>Play the demo report
+      </button>
+      <p class="hint demo-caption">“Press three is stuck. Error E four oh two. The axis is running hot.” Recorded voice.</p>
+
+      <form id="text-form" class="text-form">
+        <label for="text-input" class="sr-only">Type a fault report</label>
+        <input id="text-input" type="text" maxlength="500" autocomplete="off"
+               placeholder="Type a report, e.g. Press three is stuck. Error E four oh two.">
+        <button type="submit" class="btn">Create ticket</button>
+      </form>
+
+      <h3 class="scenarios-title">Try a scenario</h3>
+      <div class="samples" id="samples"></div>
+      <details class="more">
+        <summary>More scenarios</summary>
+        <div class="samples" id="samples-more"></div>
+      </details>
+
+      <div class="recent">
+        <div class="recent-head">
+          <h3>Recent tickets</h3>
+          <button class="btn btn-small" id="reset-demo" type="button" title="Clear recent tickets and restart numbering at #941">Reset demo</button>
+        </div>
+        <ul id="recent"><li class="empty">No tickets yet.</li></ul>
+      </div>
+    </section>
   </main>
 
   <section class="health-view" id="view-health" role="tabpanel" aria-labelledby="tab-health" hidden>
@@ -121,9 +130,8 @@
   </section>
 
   <footer class="foot">
-    <p>AI: Gemma 4 on AMD GPUs via AMD Token Factory · Speech-to-text runs on our server, never in a third-party cloud ·
-    All demo data is fictional</p>
-    <p class="built">Built by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ Innovations</a></p>
+    AI on AMD GPUs · Speech stays on our server · Demo data ·
+    Built by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ Innovations</a>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>

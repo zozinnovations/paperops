@@ -56,7 +56,8 @@ _busy = threading.BoundedSemaphore(4)       # Token Factory allows 8 concurrent 
 _hits = defaultdict(deque)
 _tickets = OrderedDict()                   # id -> result, newest last (in memory)
 _drafts = OrderedDict()                    # draft id -> report that needs clarification (not printed, no number)
-_next_id = [max(int(t["id"].split("-")[1]) for t in HISTORY) + 1]
+_FIRST_ID = max(int(t["id"].split("-")[1]) for t in HISTORY) + 1  # 941: continues the ticket history
+_next_id = [_FIRST_ID]
 _id_lock = threading.Lock()
 
 
@@ -90,13 +91,29 @@ def api_health():
 
 
 @app.get("/")
-def index():
+def index(mode: str = ""):
     # versioned asset URLs: a browser that cached an old escpos.js before no-cache headers existed would
     # still mis-render new printer commands (e.g. ESC 3 shown as a box)
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     for name in ("app.js", "escpos.js", "style.css"):
         html = html.replace(f"/static/{name}\"", f"/static/{name}?v={_ASSET_VERSION}\"")
+    if mode == "floor":
+        # shop-floor mode: only the button, progress and the receipt (set server-side, so nothing flashes)
+        html = html.replace("<body>", '<body class="floor">', 1)
     return HTMLResponse(html)
+
+
+@app.post("/api/reset")
+def api_reset(request: Request):
+    """Reset demo: clear recent tickets and drafts, numbering restarts at the first number after the history."""
+    if _rate_limited(request.client.host if request.client else "?"):
+        raise HTTPException(429, "Too many requests - please wait a minute.")
+    with _id_lock:
+        _tickets.clear()
+        _drafts.clear()
+        _next_id[0] = _FIRST_ID
+    log.info("demo reset: numbering restarts at #%s", _FIRST_ID)
+    return {"ok": True, "next_id": _FIRST_ID}
 
 
 @app.get("/api/status")
