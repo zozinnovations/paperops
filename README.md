@@ -4,7 +4,7 @@
 
 A maintenance technician presses one button (or a foot pedal) and describes a machine fault by voice. PaperOps understands the report, searches the machine manual, checks spare-part stock and prints a short repair ticket on a thermal printer: safety step first, the right part and its exact shelf location. It also spots recurring faults and recommends preventive maintenance.
 
-Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Industry*.
+Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Industry* by [ZOZ Innovations](https://www.zozinnovations.com).
 
 **AI: Gemma 4 on AMD GPUs via AMD Token Factory.** Google's open model `Gemma-4-31B-IT` understands every report; it runs on AMD GPUs through the [AMD Token Factory](https://notebooks.amd.com/tokenfactory).
 
