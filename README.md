@@ -6,6 +6,8 @@ A maintenance technician presses one button (or a foot pedal) and describes a ma
 
 Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Industry*.
 
+**AI: Gemma 4 on AMD GPUs via AMD Token Factory.** Google's open model `Gemma-4-31B-IT` understands every report; it runs on AMD GPUs through the [AMD Token Factory](https://notebooks.amd.com/tokenfactory).
+
 <!-- TODO: screenshot of a printed ticket -->
 
 ## Live demo
@@ -17,14 +19,14 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 
 1. **Voice in** – push-to-talk in the browser (hold the button, the space bar or a USB foot pedal)
 2. **Speech-to-text** – the recording goes to our backend and is transcribed by **faster-whisper** (`small.en`, int8, CPU), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
-3. **AI on AMD GPUs** – **one** call to **MiMo-V2.6-Flash** on the [AMD Token Factory](https://notebooks.amd.com/tokenfactory) turns the transcript into `{machine_id, error_code, cause, part, symptoms}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
+3. **Gemma 4 on AMD GPUs via AMD Token Factory** – **one** call to **Gemma-4-31B-IT** on the [AMD Token Factory](https://notebooks.amd.com/tokenfactory) turns the transcript into `{machine_id, error_code, cause, part, symptoms}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
 4. **Lookups in code** – machine manual, spare-part stock and shelf location, approved alternatives, 30-day fault history. Repair steps always come from the manual, so the safety step is always first and the model cannot invent parts.
 5. **Ticket out** – ESC/POS commands → thermal printer, or the on-screen printer simulator, which renders the very same bytes
 6. **Early warning** – recurring faults (e.g. E-402 on HP-400: 3× in 12 days) trigger a root-cause / preventive-maintenance hint
 
-**Measured** (T01, "Press three is stuck. Error E four oh two. The axis is running hot."): speech-to-text ~2.2 s + AI and ticket ~4.4 s = **~6.5 s from voice to printed ticket**. All 12 test cases in `data/test_transcripts.json` pass (`python scripts/bench_cases.py`).
+**Measured** (T01, "Press three is stuck. Error E four oh two. The axis is running hot."): speech-to-text ~2 s + Gemma and ticket ~3–5 s = **~6 s from voice to printed ticket** (more when the Token Factory has a slow moment). All 12 test cases in `data/test_transcripts.json` pass with Gemma, 36/36 over three full runs (`python scripts/bench_cases.py`).
 
-**Resilience:** the app checks `GET /v1/models` at startup and validates every answer. If a model fails or returns invalid output, it falls back along `FALLBACK_MODELS`. For the 12 sample recordings, recorded real runs in `replay/` stand by: if the live models fail or take longer than `LLM_BUDGET` (12 s), the app answers from the recording and says so on screen. `REPLAY_MODE=always` gives a fully offline demo, `off` disables replay.
+**Resilience:** the app checks `GET /v1/models` at startup and validates every answer. If Gemma fails or returns invalid output, it falls back along `FALLBACK_MODELS`: MiMo-V2.6-Flash → GLM-5.3-Flash → DeepSeek-V4.1-Flash, all on the Token Factory. For the 12 sample recordings, recorded real runs in `replay/` stand by: if the live models fail or take longer than `LLM_BUDGET` (12 s), the app answers from the recording and says so on screen. `REPLAY_MODE=always` gives a fully offline demo, `off` disables replay.
 
 ## Quick start (Docker)
 

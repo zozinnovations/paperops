@@ -148,7 +148,7 @@ def _process(audio, text, base_url, replay_for=None):
         ticket_id = _new_id()
         created = time.strftime("%Y-%m-%d %H:%M")
         ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
-        footer = f"AI on AMD GPUs - {model_info['model']}" + (" (replay)" if model_info["replay"] else "")
+        footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory" + (" (replay)" if model_info["replay"] else "")
         data = escpos.render(ticket, ticket_id, created, footer)
         print_status = printer.send(data)
         timings["printing"] = time.perf_counter() - t0
