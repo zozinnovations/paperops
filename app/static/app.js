@@ -16,11 +16,20 @@
       p.dataset.state = s.printer;
       p.querySelector(".label").textContent =
         s.printer === "connected" ? "Printer: connected" : s.printer === "offline" ? "Printer: offline (simulator)" : "Printer: simulator";
-      $("model-status").textContent = s.models.length ? `AI on AMD: ${s.models[0]}` : "AI on AMD: connecting…";
+      if (s.models.length) setModelBadge(s.models[0]);
+      else $("model-status").textContent = "AI on AMD: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
     } catch {
       setTimeout(loadStatus, 5000);
     }
+  }
+
+  // "Gemma 4 on AMD GPUs" for Gemma, otherwise the model id (e.g. after a fallback)
+  function setModelBadge(model, replay) {
+    const name = /^Gemma-4/i.test(model) ? "Gemma 4" : model;
+    const badge = $("model-status");
+    badge.textContent = `${name} on AMD GPUs${replay ? " (replay)" : ""}`;
+    badge.title = `Model ${model} via AMD Token Factory`;
   }
 
   // ---------- progress ----------
@@ -94,6 +103,7 @@
           ? `<span class="via">Live AI was slow or unavailable: showing a recorded real run (${ev.model})</span>`
           : `<span class="via">${ev.model}${ev.attempts && ev.attempts.length ? ` · fallback after ${ev.attempts.length} failed` : ""}</span>`);
       t.hidden = false;
+      setModelBadge(ev.model, ev.replay);
       showTicket(ev, true);
       loadRecent();
       return;
