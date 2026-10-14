@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "Robot five, no wire coming out, E nine ten. I already changed the contact tip.",
-  "system_sha": "f98b8b2d61007220",
-  "content": "{\"machine_id\": \"SR-16\", \"error_code\": \"E-910\", \"cause\": \"Feed rolls worn\", \"part\": \"Wire feed roll 1.0 mm\", \"symptoms\": [\"no wire coming out\"], \"transcript\": \"Robot five, no wire coming out, E nine ten. I already changed the contact tip.\"}",
-  "seconds": 5.99,
-  "recorded": "2026-10-14T13:49:47"
-}

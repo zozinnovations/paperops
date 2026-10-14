@@ -9,7 +9,7 @@ import threading
 import time
 from pathlib import Path
 
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small.en")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")  # 0.5 s vs 1.5 s (small.en) per report, same ticket accuracy on the 12 samples
 WHISPER_DIR = os.getenv("WHISPER_DIR") or None  # Docker bakes the model in here at build time
 WHISPER_BEAM = int(os.getenv("WHISPER_BEAM", "1"))
 WHISPER_THREADS = int(os.getenv("WHISPER_THREADS") or min(8, os.cpu_count() or 4))  # 8 vs default 4: 1.4 s vs 1.8 s
@@ -44,9 +44,14 @@ def _local_model():
     return _model
 
 
+_WARMUP_AUDIO = Path(__file__).resolve().parent.parent / "samples" / "T01.wav"
+
+
 def warm_up():
-    """Load the model at startup so the first request is not slow."""
+    """Load the model and run one real transcription at startup: the first decode after loading is slow."""
     _local_model()
+    if _WARMUP_AUDIO.exists():
+        transcribe(_WARMUP_AUDIO.read_bytes())
 
 
 def transcribe(audio: bytes) -> dict:

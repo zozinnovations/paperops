@@ -23,7 +23,7 @@ RUN groupadd --system --gid 10001 paperops \
 USER paperops
 
 # Bake the Whisper model into the image so the container starts without downloading it
-ARG WHISPER_MODEL=small.en
+ARG WHISPER_MODEL=base.en
 ENV WHISPER_MODEL=${WHISPER_MODEL}
 RUN python -c "from faster_whisper import WhisperModel; WhisperModel('${WHISPER_MODEL}', device='cpu', compute_type='int8', download_root='/models')"
 # the model is in the image: never contact the Hugging Face hub at runtime

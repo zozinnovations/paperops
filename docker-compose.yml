@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        WHISPER_MODEL: ${WHISPER_MODEL:-small.en}
+        WHISPER_MODEL: ${WHISPER_MODEL:-base.en}
     env_file: .env
     ports:
       - "${HOST_PORT:-8000}:8000"

@@ -18,7 +18,7 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 ## How it works
 
 1. **Voice in** – push-to-talk in the browser (hold the button, the space bar or a USB foot pedal)
-2. **Speech-to-text** – the recording goes to our backend and is transcribed by **faster-whisper** (`small.en`, int8, CPU), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
+2. **Speech-to-text** – the recording goes to our backend and is transcribed by **faster-whisper** (`base.en`, int8, CPU, ~0.5 s), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
 3. **Gemma 4 on AMD GPUs via AMD Token Factory** – **one** call to **Gemma-4-31B-IT** on the [AMD Token Factory](https://notebooks.amd.com/tokenfactory) turns the transcript into `{machine_id, error_code, cause, part, symptoms}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
 4. **Lookups in code** – machine manual, spare-part stock and shelf location, approved alternatives, 30-day fault history. Repair steps always come from the manual, so the safety step is always first and the model cannot invent parts.
 5. **Ticket out** – ESC/POS commands → thermal printer, or the on-screen printer simulator, which renders the very same bytes
@@ -74,7 +74,7 @@ Any ESC/POS 80 mm printer on your network: set `PRINTER_HOST` (and `PRINTER_PORT
 
 ## Speech-to-text
 
-`app/stt.py` (`transcribe(audio)`) runs faster-whisper in the container: `WHISPER_MODEL=small.en` (default, ~2 s for a 6 s report) or `base.en` (~0.7 s). The Token Factory has no speech-to-text model (the gateway rejects audio input), so transcription runs in our backend, and audio never leaves our server.
+`app/stt.py` (`transcribe(audio)`) runs faster-whisper in the container: `WHISPER_MODEL=base.en` (default, ~0.5 s for a 6 s report) or `small.en` (~1.5 s, same ticket accuracy on our 12 samples). The model is loaded and run once at startup, so the first request is fast too. The Token Factory has no speech-to-text model (the gateway rejects audio input), so transcription runs in our backend, and audio never leaves our server.
 
 ## Project layout
 

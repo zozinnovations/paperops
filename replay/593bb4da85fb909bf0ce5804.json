@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "The paint line is dripping at the back left.",
+  "system_sha": "0ca00dbb72bacb77",
+  "content": "{\"machine_id\": \"UNKNOWN\", \"error_code\": \"\", \"cause\": \"\", \"part\": \"\", \"symptoms\": [\"paint line is dripping at the back left\"]}",
+  "seconds": 2.769,
+  "recorded": "2026-10-14T14:08:07"
+}

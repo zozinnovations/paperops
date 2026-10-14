@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "Feed belt is running to one side and rubbing on the frame.",
-  "system_sha": "f98b8b2d61007220",
-  "content": "{\"machine_id\": \"FB-12\", \"error_code\": \"E-322\", \"cause\": \"Tension roller misadjusted\", \"part\": \"\", \"symptoms\": [\"belt running to one side\", \"belt rubbing on frame\"], \"transcript\": \"Feed belt is running to one side and rubbing on the frame.\"}",
-  "seconds": 4.766,
-  "recorded": "2026-10-14T13:50:09"
-}
