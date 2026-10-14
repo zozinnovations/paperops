@@ -1,4 +1,4 @@
-openai>=1.40
+openai>=3.28.0
 python-dotenv>=1.2.4
 fastapi>=0.115
 uvicorn[standard]>=0.54.0
