@@ -23,7 +23,12 @@
     </div>
   </header>
 
-  <main class="layout">
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-dispatch" aria-selected="true" aria-controls="view-dispatch" type="button">Dispatcher</button>
+    <button class="tab" role="tab" id="tab-health" aria-selected="false" aria-controls="view-health" type="button" tabindex="-1">Machine health</button>
+  </nav>
+
+  <main class="layout" id="view-dispatch" role="tabpanel" aria-labelledby="tab-dispatch">
     <section class="input-panel" aria-label="Report a fault">
       <div class="ptt-wrap">
         <button id="ptt" class="ptt" type="button" aria-label="Hold to speak" aria-pressed="false" aria-describedby="ptt-hint">
@@ -57,28 +62,24 @@
       <p class="total" id="total" hidden></p>
 
       <div class="tester">
-        <h2>No microphone? Type a report or pick a sample</h2>
+        <h2>No microphone? Type a report</h2>
         <form id="text-form" class="text-form">
           <label for="text-input" class="sr-only">Fault report</label>
           <input id="text-input" type="text" maxlength="500" autocomplete="off"
                  placeholder="e.g. Press three is stuck. Error E four oh two.">
           <button type="submit" class="btn">Create ticket</button>
         </form>
-        <p class="samples-title">Sample recordings</p>
+        <h2 class="scenarios-title">Try a scenario</h2>
         <div class="samples" id="samples"></div>
+        <details class="more">
+          <summary>More scenarios</summary>
+          <div class="samples" id="samples-more"></div>
+        </details>
       </div>
 
       <div class="recent">
         <h2>Recent tickets</h2>
         <ul id="recent"><li class="empty">No tickets yet.</li></ul>
-      </div>
-
-      <div class="health">
-        <h2>Machine health <span class="health-sub" id="health-sub">last 30 days</span></h2>
-        <table class="health-table" id="health-table">
-          <thead><tr><th scope="col">Machine</th><th scope="col">Reports</th><th scope="col">Downtime</th><th scope="col">Top fault</th></tr></thead>
-        </table>
-        <p class="health-note">Outlook = trend-based estimate from the maintenance history, not a guarantee.</p>
       </div>
     </section>
 
@@ -105,6 +106,16 @@
       </div>
     </section>
   </main>
+
+  <section class="health-view" id="view-health" role="tabpanel" aria-labelledby="tab-health" hidden>
+    <div class="health">
+      <h2>Machine health <span class="health-sub" id="health-sub">last 30 days</span></h2>
+      <table class="health-table" id="health-table">
+        <thead><tr><th scope="col">Machine</th><th scope="col">Reports</th><th scope="col">Downtime</th><th scope="col">Repeated fault</th></tr></thead>
+      </table>
+      <p class="health-note">Outlook = trend-based estimate from the maintenance history, not a guarantee.</p>
+    </div>
+  </section>
 
   <footer class="foot">
     AI: Gemma 4 on AMD GPUs via AMD Token Factory · Speech-to-text runs on our server, never in a third-party cloud ·

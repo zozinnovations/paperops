@@ -276,7 +276,8 @@
       table.querySelectorAll("tbody").forEach((b) => b.remove());
       for (const m of h.machines) {
         const body = document.createElement("tbody");
-        const top = m.top_fault ? `${m.top_fault.code} <span class="muted">${m.top_fault.count}×</span>` : "–";
+        // only a fault that came back is worth naming here
+        const top = m.top_fault && m.top_fault.count >= 2 ? `${m.top_fault.code} <span class="muted">${m.top_fault.count}×</span>` : "–";
         const hrs = m.downtime_min >= 60 ? `${(m.downtime_min / 60).toFixed(1)} h` : `${m.downtime_min} min`;
         body.innerHTML =
           `<tr class="m-row"><th scope="row"><span class="m-id">${m.machine_id}</span><span class="m-name">${m.name.replace(m.machine_id, "").trim()}</span></th>` +
@@ -287,6 +288,26 @@
       }
     } catch { /* not critical */ }
   }
+
+  // ---------- tabs: Dispatcher | Machine health ----------
+  const TABS = { dispatch: ["tab-dispatch", "view-dispatch"], health: ["tab-health", "view-health"] };
+  function showTab(name, focus) {
+    for (const [key, [tabId, viewId]] of Object.entries(TABS)) {
+      const on = key === name;
+      $(tabId).setAttribute("aria-selected", String(on));
+      $(tabId).tabIndex = on ? 0 : -1;
+      $(viewId).hidden = !on;
+    }
+    if (focus) $(TABS[name][0]).focus();
+    if (name === "health") loadMachines();
+    history.replaceState(null, "", name === "health" ? "#health" : location.pathname + location.search);
+  }
+  $("tab-dispatch").addEventListener("click", () => showTab("dispatch"));
+  $("tab-health").addEventListener("click", () => showTab("health"));
+  document.querySelector(".tabs").addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    showTab($("tab-health").getAttribute("aria-selected") === "true" ? "dispatch" : "health", true);
+  });
 
   // ---------- samples + text ----------
   let sampleList = [];
@@ -320,10 +341,10 @@
         const b = document.createElement("button");
         b.type = "button";
         b.className = "sample";
-        b.title = s.transcript;
-        b.innerHTML = `<span class="sid">${s.id}</span><span class="sdesc">${s.difficulty.replace(/\s*->.*$/, "").replace(/\(.*\)/, "")}</span>`;
+        b.title = `${s.id}: "${s.transcript}"`;  // test-case id only as tooltip
+        b.textContent = s.label;
         b.addEventListener("click", () => playSample(s));
-        box.appendChild(b);
+        (s.featured ? box : $("samples-more")).appendChild(b);
       }
     } catch { box.textContent = "Samples unavailable."; }
   }
@@ -442,6 +463,7 @@
   loadSamples();
   loadRecent();
   loadMachines();
+  if (location.hash === "#health") showTab("health");
   const qs = new URLSearchParams(location.search).get("ticket");
   if (qs) openTicket(qs);
 })();

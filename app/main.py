@@ -110,6 +110,7 @@ def api_status():
 @app.get("/api/samples")
 def api_samples():
     return [{"id": cid, "transcript": c["payload"]["transcript"], "difficulty": c["difficulty"],
+             "label": c.get("label", cid), "featured": c.get("featured", False),
              "audio": f"/samples/{cid}.wav" if (SAMPLES / f"{cid}.wav").exists() else None}
             for cid, c in CASES.items()]
 

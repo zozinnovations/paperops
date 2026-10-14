@@ -33,7 +33,7 @@ def _trend(code, times, now):
     recent = intervals[-3:]
     avg = sum(recent) / len(recent)
     due = _days(times[-1] + timedelta(days=avg) - now)
-    pattern = " -> ".join(f"{i:.0f}" for i in intervals)
+    pattern = " → ".join(f"{i:.0f}" for i in intervals)
     if due < 0.5:
         return {"level": "warn", "text": f"next {code} expected any day now (intervals {pattern} days)"}
     return {"level": "warn", "text": f"next {code} expected in ~{round(due)} days (intervals {pattern} days)"}
