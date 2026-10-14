@@ -200,7 +200,10 @@ body.busy .btn-demo, body.busy .sample { opacity: .55; cursor: progress; }
 .receipt .dbl { font-size: 2em; line-height: 1.1; }
 .receipt .tall-line { height: 2.7em; display: flex; align-items: center; }
 .receipt .tall { display: inline-block; transform: scaleY(2); }
-.receipt .inv { color: #fff; background: var(--ink); margin: 2px -4px; padding: 2px 4px; white-space: pre-wrap; }
+.receipt .inv { color: #fff; background: var(--ink); margin: 0 -4px; padding: 1px 4px; white-space: pre-wrap; }
+/* consecutive inverted lines form one solid block; space only around the block */
+.receipt .line:not(.inv) + .inv { margin-top: 3px; }
+.receipt .inv + .line:not(.inv) { margin-top: 3px; }
 .receipt .inv.prio-critical { background: var(--critical); }
 .receipt .inv.prio-high { background: var(--accent); color: #1b1206; }
 .receipt .inv.prio-normal { background: var(--normal); }

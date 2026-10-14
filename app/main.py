@@ -34,6 +34,16 @@ STATIC = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(title="PaperOps")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def no_stale_assets(request: Request, call_next):
+    """Browsers must revalidate the page and its JS/CSS (cheap via ETag): after a deploy a cached old
+    escpos.js would mis-render new printer commands."""
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 if SAMPLES.exists():
     app.mount("/samples", StaticFiles(directory=SAMPLES), name="samples")
 

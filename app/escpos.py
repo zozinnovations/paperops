@@ -14,6 +14,7 @@ ALIGN_LEFT, ALIGN_CENTER = ESC + b"a\x00", ESC + b"a\x01"
 BOLD_ON, BOLD_OFF = ESC + b"E\x01", ESC + b"E\x00"
 INVERT_ON, INVERT_OFF = GS + b"B\x01", GS + b"B\x00"
 SIZE_NORMAL, SIZE_DOUBLE, SIZE_TALL = GS + b"!\x00", GS + b"!\x11", GS + b"!\x01"
+LINE_TIGHT, LINE_DEFAULT = ESC + b"3\x18", ESC + b"2"  # 24-dot spacing = font A height -> solid inverted blocks
 CUT = GS + b"VA\x03"  # partial cut after feeding 3 lines
 
 _ASCII = {"–": "-", "—": "-", "·": "-", "°": " deg", "µ": "u", "Ø": "D", "ø": "d", "×": "x", "’": "'", "“": '"', "”": '"',
@@ -86,8 +87,8 @@ def render(ticket, ticket_id=None, created=None, footer=None):
     out.append(_line("-" * WIDTH))
 
     if ticket.get("recurring_fault"):
-        out += [INVERT_ON, BOLD_ON, *map(_line, _wrap("! RECURRING FAULT: " + ticket["recurring_fault"])),
-                BOLD_OFF, INVERT_OFF, LF]
+        out += [LINE_TIGHT, INVERT_ON, BOLD_ON, *map(_line, _wrap("! RECURRING FAULT: " + ticket["recurring_fault"])),
+                BOLD_OFF, INVERT_OFF, LINE_DEFAULT, LF]
     if ticket.get("qr_action_url"):
         out += [ALIGN_CENTER, _qr(ticket["qr_action_url"]), LF, _line("Scan to close the ticket"), ALIGN_LEFT]
     if ticket.get("est_minutes"):
