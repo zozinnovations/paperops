@@ -72,6 +72,14 @@
         <h2>Recent tickets</h2>
         <ul id="recent"><li class="empty">No tickets yet.</li></ul>
       </div>
+
+      <div class="health">
+        <h2>Machine health <span class="health-sub" id="health-sub">last 30 days</span></h2>
+        <table class="health-table" id="health-table">
+          <thead><tr><th scope="col">Machine</th><th scope="col">Reports</th><th scope="col">Downtime</th><th scope="col">Top fault</th></tr></thead>
+        </table>
+        <p class="health-note">Outlook = trend-based estimate from the maintenance history, not a guarantee.</p>
+      </div>
     </section>
 
     <section class="output-panel" aria-label="Printed ticket">

@@ -229,6 +229,29 @@ body.busy .btn-demo, body.busy .sample { opacity: .55; cursor: progress; }
   border: 1px solid var(--line); font: 12px/1.5 var(--mono); color: #b8f5d4;
 }
 
+/* ---------- machine health ---------- */
+.health { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+.health h2 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+.health-sub { display: block; font-weight: 400; font-size: 12px; margin-top: 2px; }
+.health-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.health-table thead th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.health-table td, .health-table tbody th { padding: 6px; text-align: left; vertical-align: top; font-weight: 400; }
+.health-table td:nth-child(2), .health-table td:nth-child(3) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.health-table .m-row { border-top: 1px solid var(--line); }
+.health-table tbody:first-of-type .m-row { border-top: 0; }
+.m-id { font: 600 13px var(--mono); display: block; }
+.m-name { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); font-size: 12px; }
+.o-row td { padding-top: 0; }
+.outlook { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.outlook li { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; }
+.o-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); background: var(--ok); }
+.o-warn .o-dot { background: var(--accent); }
+.o-alert .o-dot { background: var(--critical); }
+.o-alert { color: #ffb4b6; }
+.o-ok { color: var(--muted); }
+.health-note { margin: 8px 0 0; color: var(--muted); font-size: 11.5px; }
+
 .foot { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 16px 20px; }
 
 /* ---------- small screens: stack, receipt below ---------- */

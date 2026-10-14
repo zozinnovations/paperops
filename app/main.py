@@ -21,7 +21,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # n
 from fastapi.responses import FileResponse, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from . import escpos, llm, pipeline, printer, stt  # noqa: E402
+from . import escpos, health, llm, pipeline, printer, stt  # noqa: E402
 from .data import CASES, HISTORY  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -103,6 +103,12 @@ def api_samples():
     return [{"id": cid, "transcript": c["payload"]["transcript"], "difficulty": c["difficulty"],
              "audio": f"/samples/{cid}.wav" if (SAMPLES / f"{cid}.wav").exists() else None}
             for cid, c in CASES.items()]
+
+
+@app.get("/api/machines")
+def api_machines():
+    """Machine health table: history (30 days on the demo clock) plus tickets printed in this app."""
+    return health.machine_health([r["ticket"] for r in _tickets.values()])
 
 
 @app.get("/api/tickets")

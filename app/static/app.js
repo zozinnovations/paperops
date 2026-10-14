@@ -107,6 +107,7 @@
       setModelBadge(ev.model, ev.replay);
       showTicket(ev, true);
       loadRecent();
+      loadMachines();
       return;
     }
     if (ev.step === "clarify") return showClarify(ev);
@@ -135,6 +136,7 @@
       setStep("printing", "done", r.timings_ms.printing);
       showTicket(r, true);
       loadRecent();
+      loadMachines();
     } catch (err) {
       $("print-anyway").disabled = false;
       showError(err.message || String(err));
@@ -260,6 +262,28 @@
     const r = await res.json();
     showHeard(r.transcript);
     showTicket(r, false);
+  }
+
+  // ---------- machine health ----------
+  async function loadMachines() {
+    try {
+      const h = await (await fetch("/api/machines")).json();
+      const asOf = new Date(h.as_of).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      $("health-sub").textContent = `last ${h.window_days} days up to ${asOf} · outlook: ${h.label}`;
+      const table = $("health-table");
+      table.querySelectorAll("tbody").forEach((b) => b.remove());
+      for (const m of h.machines) {
+        const body = document.createElement("tbody");
+        const top = m.top_fault ? `${m.top_fault.code} <span class="muted">${m.top_fault.count}×</span>` : "–";
+        const hrs = m.downtime_min >= 60 ? `${(m.downtime_min / 60).toFixed(1)} h` : `${m.downtime_min} min`;
+        body.innerHTML =
+          `<tr class="m-row"><th scope="row"><span class="m-id">${m.machine_id}</span><span class="m-name">${m.name.replace(m.machine_id, "").trim()}</span></th>` +
+          `<td>${m.reports}${m.new_reports ? ` <span class="muted">(+${m.new_reports} new)</span>` : ""}</td><td>${hrs}</td><td>${top}</td></tr>` +
+          `<tr class="o-row"><td colspan="4"><ul class="outlook">${m.outlook.map((o) =>
+            `<li class="o-${o.level}"><span class="o-dot" aria-hidden="true"></span>${o.text}</li>`).join("")}</ul></td></tr>`;
+        table.appendChild(body);
+      }
+    } catch { /* not critical */ }
   }
 
   // ---------- samples + text ----------
@@ -415,6 +439,7 @@
   loadStatus();
   loadSamples();
   loadRecent();
+  loadMachines();
   const qs = new URLSearchParams(location.search).get("ticket");
   if (qs) openTicket(qs);
 })();
