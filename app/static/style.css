@@ -242,9 +242,6 @@ body.busy .btn-demo, body.busy .sample { opacity: .55; cursor: progress; }
 /* consecutive inverted lines form one solid block; space only around the block */
 .receipt .line:not(.inv) + .inv { margin-top: 3px; }
 .receipt .inv + .line:not(.inv) { margin-top: 3px; }
-.receipt .inv.prio-critical { background: var(--critical); }
-.receipt .inv.prio-high { background: var(--accent); color: #1b1206; }
-.receipt .inv.prio-normal { background: var(--normal); }
 .receipt .qr { padding: 10px 0 4px; }
 .receipt .qr img { width: 112px; height: 112px; image-rendering: pixelated; }
 .receipt .cut { border-top: 1px dashed #b9b4a6; margin-top: 10px; }
@@ -345,7 +342,7 @@ body.floor .ptt-label { font-size: 18px; }
   .paper { width: 80mm; font-size: 2.55mm; filter: none; opacity: 1; }
   .paper-body { background: #fff; padding: 2mm 3mm; }
   .receipt { width: auto; }
-  .receipt .inv, .receipt .inv.prio-critical, .receipt .inv.prio-high, .receipt .inv.prio-normal { background: #000 !important; color: #fff !important;
+  .receipt .inv { background: #000 !important; color: #fff !important;
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 @media (prefers-reduced-motion: reduce) {

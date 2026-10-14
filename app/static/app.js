@@ -158,7 +158,6 @@
   });
 
   // ---------- receipt ----------
-  const PRIO_CLASS = (text) => (/CRITICAL/.test(text) ? "prio-critical" : /HIGH/.test(text) ? "prio-high" : /NORMAL/.test(text) ? "prio-normal" : "");
 
   function renderLine(line) {
     if (line.cut) {
@@ -192,10 +191,7 @@
       if (!s.invert) fullInvert = false;
       el.appendChild(span);
     }
-    if (fullInvert) {
-      // inverted lines print black; the simulator colours the priority bar like the design concept
-      el.classList.add("inv", PRIO_CLASS(el.textContent) || "inv-dark");
-    }
+    if (fullInvert) el.classList.add("inv");  // black on white, exactly like the thermal printer
     if (line.segments.some((s) => s.double)) el.classList.add("dbl-line");
     if (line.segments.some((s) => s.tall && !s.double)) el.classList.add("tall-line");
     return el;

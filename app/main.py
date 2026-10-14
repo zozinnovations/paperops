@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import HTMLResponse, StreamingResponse  # noqa: E402
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from . import escpos, health, llm, pipeline, printer, stt  # noqa: E402
@@ -91,16 +91,28 @@ def api_health():
 
 
 @app.get("/")
-def index(mode: str = ""):
+def index(request: Request, mode: str = ""):
     # versioned asset URLs: a browser that cached an old escpos.js before no-cache headers existed would
     # still mis-render new printer commands (e.g. ESC 3 shown as a box)
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     for name in ("app.js", "escpos.js", "style.css"):
         html = html.replace(f"/static/{name}\"", f"/static/{name}?v={_ASSET_VERSION}\"")
+    # link previews need an absolute image URL
+    html = html.replace("__OG_IMAGE__", f"{PUBLIC_URL or str(request.base_url).rstrip('/')}/static/og.png")
     if mode == "floor":
         # shop-floor mode: only the button, progress and the receipt (set server-side, so nothing flashes)
         html = html.replace("<body>", '<body class="floor">', 1)
     return HTMLResponse(html)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return FileResponse(STATIC / "favicon.ico", media_type="image/x-icon")
+
+
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+def apple_touch_icon():
+    return FileResponse(STATIC / "apple-touch-icon.png", media_type="image/png")
 
 
 @app.post("/api/reset")

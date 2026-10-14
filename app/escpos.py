@@ -80,10 +80,17 @@ def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
         out.append(_line(created))
     out.append(_line("-" * WIDTH))
 
-    # priority bar: inverted, double size -> 24 columns
+    # priority, readable on black-and-white thermal paper (shape, not colour):
+    # CRITICAL = black double bar + black stripe, HIGH = black bar, NORMAL = no bar, bold text only
     prio = ticket.get("priority", "NORMAL")
-    out += [SIZE_DOUBLE, INVERT_ON, BOLD_ON, _line(f"{prio} PRIORITY".center(WIDTH // 2)), BOLD_OFF, INVERT_OFF,
-            SIZE_NORMAL]
+    if prio == "CRITICAL":
+        out += [LINE_TIGHT, SIZE_DOUBLE, INVERT_ON, BOLD_ON, _line("!! CRITICAL !!".center(WIDTH // 2)), SIZE_NORMAL,
+                _line("STOP - SAFETY FIRST - ACT NOW".center(WIDTH)), BOLD_OFF, INVERT_OFF, LINE_DEFAULT]
+    elif prio == "HIGH":
+        out += [SIZE_DOUBLE, INVERT_ON, BOLD_ON, _line("HIGH PRIORITY".center(WIDTH // 2)), BOLD_OFF, INVERT_OFF,
+                SIZE_NORMAL]
+    else:
+        out += [SIZE_DOUBLE, BOLD_ON, _line(f"{prio} PRIORITY".center(WIDTH // 2)), BOLD_OFF, SIZE_NORMAL]
 
     if ticket.get("unconfirmed"):
         # the match is not backed by what was said: bold banner before anything else
