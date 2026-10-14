@@ -4,6 +4,7 @@ faster-whisper on CPU in our backend (final: the Token Factory offers no audio m
 """
 import io
 import json
+import logging
 import os
 import threading
 import time
@@ -12,8 +13,37 @@ from pathlib import Path
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")  # 0.5 s vs 1.5 s (small.en) per report, same ticket accuracy on the 12 samples
 WHISPER_DIR = os.getenv("WHISPER_DIR") or None  # Docker bakes the model in here at build time
 WHISPER_BEAM = int(os.getenv("WHISPER_BEAM", "1"))
-WHISPER_THREADS = int(os.getenv("WHISPER_THREADS") or min(8, os.cpu_count() or 4))  # 8 vs default 4: 1.4 s vs 1.8 s
+log = logging.getLogger("paperops.stt")
+
+
+def usable_cpus():
+    """CPUs this process may really use: the CPU affinity, capped by a cgroup CPU quota (Docker --cpus /
+    deploy.resources). os.cpu_count() reports the host's CPUs, which oversubscribes a limited container."""
+    try:
+        cpus = len(os.sched_getaffinity(0))
+    except AttributeError:  # Windows / macOS
+        cpus = os.cpu_count() or 1
+    quota = None
+    for path in ("/sys/fs/cgroup/cpu.max", "/sys/fs/cgroup/cpu/cpu.cfs_quota_us"):
+        try:
+            text = Path(path).read_text().split()
+        except OSError:
+            continue
+        if path.endswith("cpu.max") and text[0] != "max":           # cgroup v2: "<quota> <period>"
+            quota = int(text[0]) / int(text[1])
+        elif path.endswith("cfs_quota_us") and int(text[0]) > 0:    # cgroup v1
+            period = int(Path("/sys/fs/cgroup/cpu/cpu.cfs_period_us").read_text())
+            quota = int(text[0]) / period
+        break
+    if quota:
+        cpus = min(cpus, max(1, int(quota)))
+    return cpus, quota
+
+
+CPUS, CPU_QUOTA = usable_cpus()
+WHISPER_THREADS = int(os.getenv("WHISPER_THREADS") or min(8, CPUS))
 BACKEND = f"faster-whisper:{WHISPER_MODEL}"
+WARMUP = {"seconds": None}  # measured at startup, shown in /api/status
 
 _MANUAL = Path(__file__).resolve().parent.parent / "data" / "machines_manual.json"
 
@@ -48,10 +78,14 @@ _WARMUP_AUDIO = Path(__file__).resolve().parent.parent / "samples" / "T01.wav"
 
 
 def warm_up():
-    """Load the model and run one real transcription at startup: the first decode after loading is slow."""
+    """Load the model and run one real transcription at startup: the first decode after loading is slow.
+    Logs the thread count and the measured time, so a slow server is visible at once."""
     _local_model()
     if _WARMUP_AUDIO.exists():
-        transcribe(_WARMUP_AUDIO.read_bytes())
+        transcribe(_WARMUP_AUDIO.read_bytes())          # first decode (slow, not representative)
+        WARMUP["seconds"] = round(transcribe(_WARMUP_AUDIO.read_bytes())["seconds"], 2)
+    log.info("STT %s: %d threads (usable CPUs %d, cgroup quota %s), 6.4 s sample transcribed in %s s",
+             BACKEND, WHISPER_THREADS, CPUS, f"{CPU_QUOTA:.2f}" if CPU_QUOTA else "none", WARMUP["seconds"])
 
 
 def transcribe(audio: bytes) -> dict:

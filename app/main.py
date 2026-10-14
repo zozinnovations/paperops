@@ -175,6 +175,7 @@ def api_status():
     return {"printer": printer.status(), "printer_host": printer.config()["host"] or None,
             "printer_setup": printer.ALLOW_SETUP,
             "models": models if llm._available is not None else [], "stt": stt.BACKEND,
+            "stt_threads": stt.WHISPER_THREADS, "stt_cpus": stt.CPUS, "stt_warmup_s": stt.WARMUP["seconds"],
             "replay_mode": llm.REPLAY_MODE}
 
 
