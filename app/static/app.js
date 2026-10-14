@@ -378,6 +378,7 @@
     $("paper").classList.add("idle");
     $("cmd-list").textContent = "";
     $("download").disabled = $("print").disabled = true;
+    setUrl({ ticket: null });  // a reload must not bring the old ticket back
   }
 
   // ---------- reset demo (clean video takes) ----------
@@ -388,7 +389,6 @@
     clearReceipt("Your repair ticket prints here.");
     resetProgress();
     showHeard("");
-    setUrl({ ticket: null });
     loadRecent();
     loadMachines();
   });
