@@ -329,4 +329,6 @@ async def api_create_ticket(request: Request, audio: UploadFile | None = File(No
     text = text.strip()[:1000]
     if not _busy.acquire(blocking=False):  # released when the stream generator finishes
         raise HTTPException(503, "Busy - please try again in a few seconds.")
-    return StreamingResponse(_process(data, text, str(request.base_url), replay_for), media_type="application/x-ndjson")
+    # progress must reach the browser step by step: no buffering or compression by proxies (Traefik, Cloudflare)
+    return StreamingResponse(_process(data, text, str(request.base_url), replay_for), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"})

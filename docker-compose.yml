@@ -1,3 +1,4 @@
+# Local development: builds the image from this repo. Production: deploy/docker-compose.yml.
 services:
   paperops:
     build:
@@ -19,21 +20,3 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
-
-  # HTTPS for the hosted demo (browsers only allow the microphone over HTTPS).
-  # Set DOMAIN in .env, point its DNS to the server, then: docker compose --profile https up -d
-  caddy:
-    image: caddy:2.8
-    profiles: ["https"]
-    command: caddy reverse-proxy --from ${DOMAIN:-localhost} --to paperops:8000
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-    depends_on:
-      - paperops
-    restart: unless-stopped
-
-volumes:
-  caddy_data:

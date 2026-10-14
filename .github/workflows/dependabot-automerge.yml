@@ -1,0 +1,46 @@
+name: Dependabot auto-merge
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # Do not check out or execute pull request code in this privileged job.
+      - name: Merge tested Dependabot pull requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prs=$(gh api --method GET "repos/$REPO/pulls" \
+            -f state=open -f base=main -f "head=${REPO%%/*}:$HEAD_BRANCH" \
+            --jq '.[] | select(.user.login == "dependabot[bot]") | .number')
+          if [[ -z "$prs" ]]; then
+            echo "No open Dependabot PR matches this CI run."
+            exit 0
+          fi
+          for number in $prs; do
+            pr=$(gh api "repos/$REPO/pulls/$number")
+            if ! jq -e --arg sha "$TESTED_SHA" --arg repo "$REPO" \
+              '.state == "open" and .draft == false and .user.login == "dependabot[bot]" and .base.ref == "main" and .head.repo.full_name == $repo and .head.sha == $sha' \
+              <<< "$pr" > /dev/null; then
+              echo "Skipping PR #$number: it no longer matches the tested commit."
+              continue
+            fi
+            gh pr merge "$number" --repo "$REPO" --merge --match-head-commit "$TESTED_SHA"
+            # GITHUB_TOKEN merges do not trigger push workflows.
+            gh workflow run deploy.yml --repo "$REPO" --ref main
+          done

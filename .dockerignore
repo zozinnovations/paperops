@@ -8,3 +8,5 @@ cache/
 .venv/
 venv/
 scripts/
+.github/
+deploy/

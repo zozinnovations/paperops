@@ -1,0 +1,116 @@
+name: Build & Deploy (Docker)
+
+# Same flow as zoz-website: image to GHCR, then docker compose on the ZOZ server behind Traefik.
+# Repository secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_PORT, DEPLOY_PATH, RADEON_API_KEY
+# (optional GHCR_USERNAME / GHCR_TOKEN if the image is private).
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: ["main"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/zozinnovations/paperops
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-push:
+    # only after a green CI run of a push to main (or when started by hand)
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha || github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+    steps:
+      - name: Skip if the server is not configured yet
+        if: env.SSH_HOST == ''
+        run: echo "::notice::SSH secrets not set - image pushed, deployment skipped."
+
+      - name: Checkout
+        if: env.SSH_HOST != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Copy docker-compose.yml to server
+        if: env.SSH_HOST != ''
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "deploy/docker-compose.yml"
+          strip_components: 1
+          target: "${{ secrets.DEPLOY_PATH }}/"
+
+      - name: Deploy over SSH
+        if: env.SSH_HOST != ''
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          RADEON_API_KEY: ${{ secrets.RADEON_API_KEY }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: RADEON_API_KEY,GHCR_USERNAME,GHCR_TOKEN
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            # the API key lives only in this file on the server (mode 600), never in the repo
+            umask 077
+            printf 'RADEON_API_KEY=%s\n' "$RADEON_API_KEY" > .env
+
+            # Optional: only needed if the GHCR image is private
+            if [ -n "$GHCR_TOKEN" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            fi
+
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+
+            # wait until the container reports healthy (Whisper model loaded)
+            for i in $(seq 1 45); do
+              state=$(docker inspect --format '{{.State.Health.Status}}' paperops 2>/dev/null || echo starting)
+              [ "$state" = "healthy" ] && echo "paperops is healthy" && exit 0
+              sleep 4
+            done
+            docker logs --tail 50 paperops
+            echo "paperops did not become healthy" && exit 1

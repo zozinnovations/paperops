@@ -12,7 +12,7 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 
 ## Live demo
 
-- App: TODO (hosted URL)
+- App: https://paperops.zozinnovations.com
 - Video: TODO
 
 ## Who it's for
@@ -108,21 +108,21 @@ Any ESC/POS 80 mm printer on your network (raw TCP, usually port 9100):
 - **Printer settings dialog** – set `ALLOW_PRINTER_SETUP=1` in `.env` (local installs only), restart once, then use *Printer settings* in the header: IP address or host name, port, *Test print* and status. Changes apply immediately, no restart. Only local-network addresses are accepted.
 - **Or via `.env`** – `PRINTER_HOST=192.168.1.50` and `PRINTER_PORT=9100`.
 
-The header shows "Printer: connected"; without a printer the ticket appears in the on-screen simulator. On the hosted demo `ALLOW_PRINTER_SETUP` stays `0`, so nobody can point the server at arbitrary network targets.
+The header shows "Printer: connected"; without a printer the ticket appears in the on-screen simulator. On the public server `ALLOW_PRINTER_SETUP` stays `0`, so nobody can point it at arbitrary network targets.
 
-## Hosting (demo URL for the judges)
+## Deployment
 
-PaperOps needs a long-running process with **2 GB RAM** and **HTTPS** (browsers only allow the microphone on HTTPS). Serverless platforms such as Vercel do not fit. The same Docker image runs on:
+The live app runs at **https://paperops.zozinnovations.com** on the ZOZ Innovations server: a Docker container behind the server's central Traefik reverse proxy, which provides HTTPS (required for the microphone). The flow is fully automated with GitHub Actions:
 
-| Platform | Config in this repo | Steps |
-|---|---|---|
-| **Railway** (simplest) | `railway.json` | New project → deploy from the GitHub repo → add variable `RADEON_API_KEY` → Settings → Networking → generate domain (HTTPS included) |
-| **Fly.io** | `fly.toml` (2 GB, always on, Frankfurt) | `fly launch --copy-config --no-deploy` → `fly secrets set RADEON_API_KEY=...` → `fly deploy` |
-| **Render** | `render.yaml` (plan *standard*, 2 GB) | New → Blueprint → select the repo → enter `RADEON_API_KEY` |
+| Workflow | What it does |
+|---|---|
+| `ci.yml` | on every push and pull request: builds the image and tests it end to end **without an API key** (`REPLAY_MODE=always`): a voice sample through Whisper to a ticket, a CRITICAL text report, a nonsense report that must ask back, both views |
+| `deploy.yml` | after a green CI run on `main`: pushes the image to `ghcr.io/zozinnovations/paperops`, copies `deploy/docker-compose.yml` to the server, writes the API key into the server's `.env` (mode 600), runs `docker compose pull && up -d` and waits until the container is healthy |
+| `dependabot-automerge.yml` | merges Dependabot updates (pip, Docker, GitHub Actions – weekly, see `.github/dependabot.yml`) once CI has passed on exactly the tested commit, then deploys |
 
-On every platform: set the API key only as a secret, set `PUBLIC_URL` to the HTTPS address (QR code and link preview), keep `ALLOW_PRINTER_SETUP=0`, and keep one instance always running so judges never hit a cold start. The platform passes `PORT`; the image listens on it and serves `/api/health` for health checks.
+`deploy/docker-compose.yml` joins the server's `web-network` and carries the Traefik labels for `paperops.zozinnovations.com`, plus the same hardening as locally (read-only file system, no Linux capabilities, non-root user). Repository secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`, `DEPLOY_PATH`, `RADEON_API_KEY` (optional `GHCR_USERNAME` / `GHCR_TOKEN` for a private image). Without the SSH secrets the workflow only builds the image and skips the deployment.
 
-**Own server with a domain:** set `DOMAIN` and `PUBLIC_URL` in `.env` and start the bundled Caddy proxy, which gets a certificate automatically: `docker compose --profile https up -d --build`.
+**Hosting it elsewhere:** any machine that runs Docker with ~2 GB RAM, behind any HTTPS reverse proxy. The image listens on `$PORT` (default 8000) and serves `/api/health` for health checks; set `PUBLIC_URL` and keep `ALLOW_PRINTER_SETUP=0` on public servers. Serverless platforms do not fit: the speech model stays in memory in a long-running process.
 
 ## Configuration
 
@@ -151,6 +151,8 @@ samples/    spoken versions of test cases T01-T12 (scenario buttons)
 replay/     recorded real Gemma answers for the offline / slow-API fallback
 scripts/    bench_cases.py (all cases), test_audio.py (voice end-to-end), refresh_replay.py,
             make_icons.py, make_og_image.py
+deploy/     docker-compose.yml for the production server (Traefik)
+.github/    CI, deployment and Dependabot workflows
 ```
 
 ## Demo data

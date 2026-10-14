@@ -34,7 +34,7 @@ COPY data ./data
 COPY samples ./samples
 COPY replay ./replay
 
-# Railway / Render / Fly.io pass the port to listen on in $PORT
+# the port to listen on (container platforms set $PORT)
 ENV PORT=8000
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/api/health', timeout=4)"

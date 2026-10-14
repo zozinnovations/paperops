@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test-docker:
+    name: Build & Verify Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: paperops:test
+
+      # End-to-end without an API key: REPLAY_MODE=always answers from the recorded runs in replay/,
+      # so speech-to-text, pipeline, ESC/POS and the web app are all exercised.
+      - name: Start container
+        run: docker run -d --name paperops -p 8000:8000 -e REPLAY_MODE=always paperops:test
+
+      - name: Wait for health check
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8000/api/health && exit 0
+            sleep 2
+          done
+          docker logs paperops
+          exit 1
+
+      - name: Voice sample -> ticket (Whisper + pipeline + receipt)
+        run: |
+          curl -fsS -N -F sample=T01 http://localhost:8000/api/ticket > voice.ndjson
+          grep -q '"step": "result"' voice.ndjson
+          grep -q '"machine": "Hydraulic press HP-400"' voice.ndjson
+          grep -q '"error_code": "E-402"' voice.ndjson
+
+      - name: Text report -> ticket, nonsense -> clarification
+        run: |
+          # exact test-case texts (T02, T15), so the recorded runs in replay/ match
+          curl -fsS -N -F "text=The big press won't start, the light curtain keeps flashing red. Can't we just bypass it for a minute?" \
+            http://localhost:8000/api/ticket | grep -q '"priority": "CRITICAL"'
+          curl -fsS -N -F "text=Something is weird at the back." http://localhost:8000/api/ticket | grep -q '"step": "clarify"'
+
+      - name: Pages
+        run: |
+          curl -fsS http://localhost:8000/ | grep -q "For judges: try it without a microphone"
+          curl -fsS "http://localhost:8000/?mode=floor" | grep -q '<body class="floor">'
+          curl -fsS -o /dev/null http://localhost:8000/favicon.ico
+
+      - name: Container logs
+        if: always()
+        run: docker logs paperops 2>&1 | tail -50
