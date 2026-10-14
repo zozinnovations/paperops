@@ -1,7 +1,7 @@
 openai>=1.40
 python-dotenv>=1.2.4
 fastapi>=0.115
-uvicorn[standard]>=0.30
+uvicorn[standard]>=0.54.0
 python-multipart>=0.0.32
 faster-whisper==1.2.1
 # faster-whisper 1.2.1 passes metadata_errors to av.open(), removed in PyAV 16+
