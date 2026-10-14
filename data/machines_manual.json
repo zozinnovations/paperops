@@ -21,7 +21,7 @@
           "causes": ["Supply line A3 blocked or cracked", "Lubricating oil tank empty", "Dosing pump P2 faulty"],
           "default_priority": "HIGH",
           "safety": "Lock the emergency stop. Axis can be above 80 °C – wear heat-resistant gloves.",
-          "safety_short": "LOCKOUT Q1 · AXIS HOT >80 °C · HEAT GLOVES",
+          "safety_short": "FIRST: LOCK E-STOP Q1 · AXIS HOT (>80 °C) – WEAR HEAT GLOVES",
           "steps": [
             "Lock the emergency stop (lockout Q1).",
             "Check supply line A3 for cracks and blockage.",
@@ -32,7 +32,7 @@
           "parts": [{"part": "Lubricating oil ISO VG 46", "qty": "0.5 l"}],
           "est_minutes": 25,
           "recurring_root_causes": ["Dosing pump P2 faulty", "Supply line A3 blocked or cracked"],
-          "recurring_advice": "check dosing pump P2 and supply line A3, don't just refill oil",
+          "recurring_advice": "Don't just add oil. Check pump P2 and line A3.",
           "recurring_likely": "pump P2 / line A3"
         },
         {
@@ -42,7 +42,7 @@
           "causes": ["Main cylinder seal worn", "Hydraulic filter clogged", "Oil level too low"],
           "default_priority": "HIGH",
           "safety": "Release hydraulic accumulator via V7. Oil escaping under pressure can penetrate skin.",
-          "safety_short": "LOCKOUT Q1 · RELEASE V7 TO 0 BAR · OIL UNDER PRESSURE",
+          "safety_short": "FIRST: LOCK E-STOP Q1 · RELEASE V7 TO 0 BAR – OIL UNDER PRESSURE",
           "steps": [
             "Lockout Q1, release accumulator via V7, wait for 0 bar.",
             "Check oil level in sight glass, top up hydraulic oil HLP 46 if needed.",
@@ -64,7 +64,7 @@
           "causes": ["Transmitter/receiver dirty", "Cable damaged", "Light curtain misaligned"],
           "default_priority": "CRITICAL",
           "safety": "SAFETY FUNCTION! Never run the press without a working light curtain. Bypassing is forbidden. Qualified electrician only.",
-          "safety_short": "LOCKOUT Q1 · DO NOT SWITCH ON · NEVER BYPASS LIGHT CURTAIN · ELECTRICIAN ONLY",
+          "safety_short": "FIRST: LOCK E-STOP Q1 · DO NOT SWITCH ON – NEVER BYPASS THE LIGHT CURTAIN · ELECTRICIAN ONLY",
           "steps": [
             "Take the press out of service and attach a 'DO NOT SWITCH ON' sign.",
             "Call a qualified electrician – never bypass.",
@@ -92,7 +92,7 @@
           "causes": ["Coolant level low", "Coolant filter clogged", "Cooling unit fan faulty"],
           "default_priority": "HIGH",
           "safety": "Let the spindle cool down for 10 minutes. Coolant: wear skin protection.",
-          "safety_short": "EMERGENCY STOP · LET SPINDLE COOL 10 MIN · SKIN PROTECTION",
+          "safety_short": "FIRST: PRESS E-STOP, LOCK MAIN SWITCH · SPINDLE HOT – LET IT COOL 10 MIN · WEAR GLOVES – COOLANT",
           "steps": [
             "Stop the program, press emergency stop, let the spindle cool down.",
             "Check coolant level, top up with 5 % coolant emulsion.",
@@ -113,7 +113,7 @@
           "causes": ["Chips in the gripper", "Tool not seated correctly in magazine", "Air pressure too low"],
           "default_priority": "NORMAL",
           "safety": "Do not reach into the magazine while compressed air is connected.",
-          "safety_short": "EMERGENCY STOP · AIR OFF AT W1 · HANDS OUT OF MAGAZINE",
+          "safety_short": "FIRST: PRESS E-STOP, AIR OFF AT W1 · HANDS OUT OF THE MAGAZINE",
           "steps": [
             "Press emergency stop, shut off compressed air at service unit W1.",
             "Clean chips from gripper and magazine pocket.",
@@ -131,7 +131,7 @@
           "causes": ["Guideway not lubricated", "Ball screw worn", "Coupling loose"],
           "default_priority": "HIGH",
           "safety": "Lockout. Secure axes against dropping.",
-          "safety_short": "LOCKOUT MAIN SWITCH · SECURE AXES AGAINST DROPPING",
+          "safety_short": "FIRST: LOCK MAIN SWITCH · SECURE THE AXES – THEY CAN DROP",
           "steps": [
             "Lock out the main switch.",
             "Check central lubrication, refill grease NLGI 2.",
@@ -159,7 +159,7 @@
           "causes": ["Belt overloaded", "Drive roller bearing seized", "Foreign object jammed"],
           "default_priority": "HIGH",
           "safety": "Lock drive S4. Never reach into a running belt.",
-          "safety_short": "PULL-CORD STOP · LOCK DRIVE S4 · NEVER REACH INTO A RUNNING BELT",
+          "safety_short": "FIRST: PULL E-STOP CORD, LOCK DRIVE S4 · NEVER REACH INTO A RUNNING BELT",
           "steps": [
             "Switch off and lock drive S4.",
             "Unload the belt and check for foreign objects.",
@@ -177,7 +177,7 @@
           "causes": ["Tension roller misadjusted", "Dirt on rollers"],
           "default_priority": "NORMAL",
           "safety": "Lock drive S4.",
-          "safety_short": "PULL-CORD STOP · LOCK DRIVE S4",
+          "safety_short": "FIRST: PULL E-STOP CORD, LOCK DRIVE S4 · KEEP HANDS OFF THE BELT",
           "steps": [
             "Lock drive S4.",
             "Clean residue from the rollers.",
@@ -204,7 +204,7 @@
           "causes": ["Feed rolls worn", "Wire liner dirty", "Contact tip fused"],
           "default_priority": "NORMAL",
           "safety": "Torch may be hot. Switch off the welding power source.",
-          "safety_short": "ROBOT SAFETY STOP · WELDING POWER OFF · TORCH HOT",
+          "safety_short": "FIRST: ROBOT SAFETY STOP, WELDING POWER OFF · TORCH HOT – WEAR GLOVES",
           "steps": [
             "Robot safety stop, power source off.",
             "Check and replace contact tip M6 1.0 mm.",
@@ -225,7 +225,7 @@
           "causes": ["Gas cylinder empty", "Hose leaking", "Gas nozzle dirty"],
           "default_priority": "NORMAL",
           "safety": "Secure the gas cylinder against falling over.",
-          "safety_short": "ROBOT SAFETY STOP · LOCK MAIN SWITCH · SECURE GAS CYLINDER",
+          "safety_short": "FIRST: ROBOT SAFETY STOP, LOCK MAIN SWITCH · SECURE THE GAS CYLINDER",
           "steps": [
             "Check cylinder pressure on the gauge; below 10 bar = replace cylinder.",
             "Clean gas nozzle, apply anti-spatter spray.",

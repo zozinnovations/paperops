@@ -45,17 +45,13 @@ def receipt_stamp():
     return datetime.now(ZoneInfo(TICKET_TZ)).strftime("%Y-%m-%d %H:%M %Z")
 
 
-def eta_text(eta):
-    """Reorder ETA relative to the demo clock: "ETA in 5 days" instead of a date that looks past or odd."""
+def arrives_text(eta):
+    """Delivery of a reordered part, relative to the demo clock: "arrives in 5 days"."""
     days = (datetime.fromisoformat(eta).date() - demo_now().date()).days
     if days > 1:
-        return f"ETA in {days} days"
-    return {1: "ETA tomorrow", 0: "ETA today"}.get(days, f"was due {-days} days ago")
+        return f"arrives in {days} days"
+    return {1: "arrives tomorrow", 0: "arrives today"}.get(days, f"was due {-days} days ago")
 
-
-def machine_reports(machine_id, days=WINDOW_DAYS):
-    """Number of history reports for a machine in the window up to the demo clock."""
-    return sum(1 for t in recent_history(days) if t["machine_id"] == machine_id)
 
 
 def recent_history(days=WINDOW_DAYS):
@@ -128,12 +124,15 @@ def stock_fields(inv):
         return {}
     part, note = inv, None
     reorder = inv.get("reorder") or {}
-    reorder_txt = f"reorder {reorder.get('status', 'unknown')}" + (f", {eta_text(reorder['eta'])}" if reorder.get("eta") else "")
+    if reorder.get("status") == "ordered":
+        reorder_txt = "Already reordered" + (f" – {arrives_text(reorder['eta'])}." if reorder.get("eta") else ".")
+    else:
+        reorder_txt = "Not reordered yet."
     if inv["stock"] == 0 and inv.get("alternative"):
         part = inv["alternative"]
-        note = f"Original out of stock: {inv['name']} ({reorder_txt}). Use approved alternative {part['name']}."
+        note = f"Original out of stock: {inv['name']}. {reorder_txt} Use approved alternative {part['name']}."
     elif inv["stock"] == 0:
-        note = f"Out of stock, no alternative ({reorder_txt}) - escalate to shift supervisor and reorder now."
+        note = f"Out of stock, no alternative. {reorder_txt} Tell the shift lead and reorder now."
     out = {
         "part_needed": part["name"],
         "location": part["location"],

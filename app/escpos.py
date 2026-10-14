@@ -145,7 +145,7 @@ def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
     if ticket.get("qr_action_url"):
         out += [ALIGN_CENTER, _qr(ticket["qr_action_url"]), LF, _line("Scan to close the ticket"), ALIGN_LEFT]
     if ticket.get("est_minutes"):
-        out.append(_line(f"Est. repair time: {ticket['est_minutes']} min"))
+        out.append(_line(f"Repair time: about {ticket['est_minutes']} min"))
     if footer:
         out += [ALIGN_CENTER, *map(_line, _wrap(footer + (" (replay)" if replay and DEMO_MODE else ""))), ALIGN_LEFT]
     out += [LF * 3, CUT]

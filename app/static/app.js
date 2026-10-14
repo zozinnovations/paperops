@@ -6,6 +6,7 @@
   const MIN_RECORD_MS = 400;
 
   let busy = false;
+  let fromJudges = false;  // last request came from the judges' panel (sample, demo, text)
 
   // keeps ?mode=floor (shop-floor view) when the ticket id or the tab changes
   function setUrl({ ticket, hash } = {}) {
@@ -142,6 +143,9 @@
     $("print-anyway").disabled = false;
     $("clarify").hidden = false;
     setModelBadge(ev.model, ev.replay);
+    clearReceipt("Nothing printed – see the question above.");
+    // started from the judges' panel (often below or beside): bring the question into view
+    if (fromJudges) $("clarify").scrollIntoView({ behavior: "smooth", block: "center" });
   }
   $("print-anyway").addEventListener("click", async () => {
     if (!draftId) return;
@@ -284,7 +288,8 @@
     try {
       const h = await (await fetch("/api/machines")).json();
       const asOf = new Date(h.as_of).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-      $("health-sub").textContent = `last ${h.window_days} days up to ${asOf} · outlook: ${h.label}`;
+      $("health-sub").textContent = `Demo history (fictional data): ${h.window_days} days up to ${asOf}, ` +
+        `plus tickets printed today · outlook: ${h.label}`;
       const table = $("health-table");
       table.querySelectorAll("tbody").forEach((b) => b.remove());
       for (const m of h.machines) {
@@ -364,16 +369,23 @@
   });
   $("printer-close").addEventListener("click", () => dlg.close());
 
+  function clearReceipt(message) {
+    current = null;
+    const p = document.createElement("p");
+    p.className = "placeholder";
+    p.textContent = message;
+    $("receipt").replaceChildren(p);
+    $("paper").classList.add("idle");
+    $("cmd-list").textContent = "";
+    $("download").disabled = $("print").disabled = true;
+  }
+
   // ---------- reset demo (clean video takes) ----------
   $("reset-demo").addEventListener("click", async () => {
     if (busy) return;
     const res = await fetch("/api/reset", { method: "POST" });
     if (!res.ok) return showError("Reset failed - please try again.");
-    current = null;
-    $("receipt").innerHTML = '<p class="placeholder">Your repair ticket prints here.</p>';
-    $("paper").classList.add("idle");
-    $("cmd-list").textContent = "";
-    $("download").disabled = $("print").disabled = true;
+    clearReceipt("Your repair ticket prints here.");
     resetProgress();
     showHeard("");
     setUrl({ ticket: null });
@@ -405,6 +417,7 @@
   // Plays the recording out loud (so judges hear the report) and sends the same file through the pipeline.
   function playSample(s) {
     if (busy) return;
+    fromJudges = true;
     const f = new FormData();
     if (s.audio) {
       f.append("sample", s.id);
@@ -443,6 +456,7 @@
     if (!text) return;
     const f = new FormData();
     f.append("text", text);
+    fromJudges = true;
     submit(f);
   });
 
@@ -459,6 +473,7 @@
 
   async function startRecording() {
     if (busy || recorder) return;
+    fromJudges = false;
     wantRecording = true;
     try {
       if (!stream) {
@@ -546,6 +561,11 @@
   });
   $("print").addEventListener("click", () => window.print());
   $("show-cmds").addEventListener("change", (e) => { $("commands").hidden = !e.target.checked; });
+
+  // touch devices have no Space bar or foot pedal
+  if (window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches) {
+    $("ptt-hint").textContent = "Hold the button while you speak.";
+  }
 
   // ---------- start ----------
   loadStatus();

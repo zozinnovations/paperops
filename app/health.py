@@ -13,7 +13,7 @@ demo runs must not shrink the intervals to zero.
 from collections import Counter
 from datetime import datetime, timedelta
 
-from .data import INVENTORY, MANUAL, demo_now, eta_text, recent_history
+from .data import INVENTORY, MANUAL, arrives_text, demo_now, recent_history
 
 _BY_SKU = {p["sku"]: p for p in INVENTORY}
 _BY_NAME = {p["name"]: p for p in INVENTORY}
@@ -57,7 +57,7 @@ def _stock_lines(machine, history, codes_count):
             reorder = part.get("reorder") or {}
             note = ""
             if reorder.get("status") == "ordered":
-                note = "; reordered" + (f", {eta_text(reorder['eta'])}" if reorder.get("eta") else "")
+                note = "; already reordered" + (f" – {arrives_text(reorder['eta'])}" if reorder.get("eta") else "")
             lines.append({"level": "warn",
                           "text": f"{part['name']} below minimum stock ({part['stock']} of {part['min_stock']}{note})"})
             flagged.add(part["sku"])

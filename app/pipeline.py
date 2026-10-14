@@ -4,7 +4,7 @@ import time
 
 from . import evidence as ev_check
 from . import llm
-from .data import INVENTORY, MANUAL, check_inventory, machine_reports, recurring_faults, stock_fields, words
+from .data import INVENTORY, MANUAL, check_inventory, recurring_faults, stock_fields, words
 
 
 def _part_use(part, steps):
@@ -110,10 +110,9 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
     ticket.update(stock_fields(inv))
     if count >= 2:
         # a fault that keeps coming back is not fixed by the quick remedy: point to the root cause from the manual
-        advice = error.get("recurring_advice", "check the root cause and schedule preventive maintenance")
-        reports = machine_reports(machine["machine_id"])  # all reports on this machine, as in Machine health
-        # wording as in the demo video
-        ticket["recurring_fault"] = f"{_ordinal(count)} time in {days} days ({reports}× in 30 days) – {advice}"
+        advice = error.get("recurring_advice", "Check the root cause and plan preventive maintenance.")
+        # short and plain, as in the demo video: "3rd time in 12 days! Don't just add oil. Check pump P2 and line A3."
+        ticket["recurring_fault"] = f"{_ordinal(count)} time in {days} days! {advice}"
         if error.get("recurring_root_causes"):
             ticket["likely_cause"] = error.get("recurring_likely") or " / ".join(error["recurring_root_causes"])
     return ticket
