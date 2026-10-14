@@ -195,7 +195,8 @@
     probe.textContent = "0".repeat(48);
     probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
     $("receipt").appendChild(probe);
-    const avail = paper.clientWidth - parseFloat(getComputedStyle(paper).paddingLeft) * 2;
+    const body = paper.querySelector(".paper-body");
+    const avail = body.clientWidth - parseFloat(getComputedStyle(body).paddingLeft) * 2;
     const need = probe.getBoundingClientRect().width;
     probe.remove();
     if (need > avail) paper.style.fontSize = `${parseFloat(getComputedStyle(paper).fontSize) * avail / need}px`;
