@@ -39,7 +39,9 @@ def make_client():
 def check_ticket(ticket, expected):
     """Returns (ok, list of failure strings)."""
     fails = [f"missing {k}" for k in REQUIRED if not ticket.get(k)]
-    text = json.dumps(ticket, ensure_ascii=False).lower()
+    text = json.dumps({k: v for k, v in ticket.items() if k != "evidence"}, ensure_ascii=False).lower()
+    if bool(ticket.get("unconfirmed")) != expected.get("unconfirmed", False):
+        fails.append("UNCONFIRMED banner" + (" missing" if expected.get("unconfirmed") else f": {ticket.get('evidence')}"))
     for k, v in expected.items():
         if k == "first_step_contains":
             if v.lower() not in (ticket.get("steps") or [""])[0].lower():
@@ -59,6 +61,11 @@ def check_ticket(ticket, expected):
         elif k == "recurring_flag":
             if bool(ticket.get("recurring_fault")) != v:
                 fails.append(f"recurring_fault expected {v}")
+        elif k == "unconfirmed":
+            continue  # checked above
+        elif k == "clarify":
+            if bool(ticket.get("clarify")) != v:
+                fails.append("expected a clarification question (nothing printed)" if v else "unexpected clarification")
         elif k == "must_not_invent_part":
             if str(ticket.get("part_needed", "")).lower() not in ("none", ""):
                 fails.append(f"invented part '{ticket.get('part_needed')}'")

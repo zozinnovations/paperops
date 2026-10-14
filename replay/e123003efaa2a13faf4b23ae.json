@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "Mill two stops in the middle of the program, the spindle is really hot and there's no coolant coming out.",
+  "system_sha": "3a03aee8ed89af8c",
+  "content": "{\"machine_id\": \"FZ-65\", \"error_code\": \"E-701\", \"cause\": \"Coolant level low\", \"part\": \"Coolant concentrate\", \"symptoms\": [\"stops mid-program\", \"spindle hot\", \"no coolant flow\"], \"evidence\": \"Mill two stops in the middle of the program, the spindle is really hot and there's no coolant coming out.\"}",
+  "seconds": 3.768,
+  "recorded": "2026-10-14T14:47:11"
+}

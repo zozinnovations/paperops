@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "Welding cell: the seams have pores and the gas warning is on.",
-  "system_sha": "0ca00dbb72bacb77",
-  "content": "{\"machine_id\": \"SR-16\", \"error_code\": \"E-944\", \"cause\": \"Gas cylinder empty\", \"part\": \"Shielding gas M21 cylinder 20 l\", \"symptoms\": [\"pores in the seam\", \"gas warning\"]}",
-  "seconds": 4.822,
-  "recorded": "2026-10-14T14:08:12"
-}

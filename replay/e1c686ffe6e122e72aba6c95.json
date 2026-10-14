@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "See and see two, the magazine won't rotate.",
+  "system_sha": "3a03aee8ed89af8c",
+  "content": "{\"machine_id\": \"FZ-65\", \"error_code\": \"E-733\", \"cause\": \"Chips in the gripper\", \"part\": \"\", \"symptoms\": [\"magazine does not rotate\"], \"evidence\": \"CNC 2, the magazine won't rotate\"}",
+  "seconds": 2.452,
+  "recorded": "2026-10-14T14:48:17"
+}

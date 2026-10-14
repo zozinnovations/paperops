@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "Something is weird at the back.",
+  "system_sha": "3a03aee8ed89af8c",
+  "content": "{\"machine_id\": \"UNKNOWN\", \"error_code\": \"\", \"cause\": \"\", \"part\": \"\", \"symptoms\": [], \"evidence\": \"\"}",
+  "seconds": 1.936,
+  "recorded": "2026-10-14T14:48:19"
+}

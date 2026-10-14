@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "CNC two, tool changer is stuck, magazine won't rotate.",
-  "system_sha": "0ca00dbb72bacb77",
-  "content": "{\"machine_id\": \"FZ-65\", \"error_code\": \"E-733\", \"cause\": \"Chips in the gripper\", \"part\": \"\", \"symptoms\": [\"tool changer is stuck\", \"magazine won't rotate\"]}",
-  "seconds": 5.06,
-  "recorded": "2026-10-14T14:08:17"
-}

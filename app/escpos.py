@@ -54,6 +54,11 @@ def render(ticket, ticket_id=None, created=None, footer=None):
     out += [SIZE_DOUBLE, INVERT_ON, BOLD_ON, _line(f"{prio} PRIORITY".center(WIDTH // 2)), BOLD_OFF, INVERT_OFF,
             SIZE_NORMAL, ALIGN_LEFT, LF]
 
+    if ticket.get("unconfirmed"):
+        # the match is not backed by what was said: bold banner before anything else
+        out += [ALIGN_CENTER, LINE_TIGHT, INVERT_ON, BOLD_ON, _line(" UNCONFIRMED ".center(WIDTH, "!")),
+                _line("VERIFY MACHINE ON SITE".center(WIDTH)), BOLD_OFF, INVERT_OFF, LINE_DEFAULT, ALIGN_LEFT,
+                BOLD_ON, *map(_line, _wrap(ticket["unconfirmed"])), BOLD_OFF, LF]
     out += [BOLD_ON, *map(_line, _wrap(ticket.get("machine", "UNKNOWN"))), BOLD_OFF]
     meta = " | ".join(x for x in [ticket.get("error_code"), ticket.get("machine_location")] if x)
     if meta:

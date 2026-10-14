@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "HP four hundred is losing oil under the cylinder and can't finish the stroke. E two one five.",
-  "system_sha": "0ca00dbb72bacb77",
-  "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-215\", \"cause\": \"Main cylinder seal worn\", \"part\": \"Main cylinder seal kit HP-400\", \"symptoms\": [\"losing oil under the cylinder\", \"can't finish the stroke\"]}",
-  "seconds": 4.32,
-  "recorded": "2026-10-14T14:07:29"
-}

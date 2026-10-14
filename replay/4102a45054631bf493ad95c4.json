@@ -1,0 +1,8 @@
+{
+  "model": "Gemma-4-31B-IT",
+  "user": "press three e four o two again",
+  "system_sha": "3a03aee8ed89af8c",
+  "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-402\", \"cause\": \"\", \"part\": \"\", \"symptoms\": [], \"evidence\": \"press three e four o two\"}",
+  "seconds": 2.216,
+  "recorded": "2026-10-14T14:47:21"
+}

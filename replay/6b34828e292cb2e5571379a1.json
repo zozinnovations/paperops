@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "Press three is stuck. Error E four oh two. The axis is running hot.",
-  "system_sha": "0ca00dbb72bacb77",
-  "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-402\", \"cause\": \"Supply line A3 blocked or cracked\", \"part\": \"Lubricating oil ISO VG 46\", \"symptoms\": [\"press stuck\", \"axis running hot\"]}",
-  "seconds": 6.247,
-  "recorded": "2026-10-14T14:07:20"
-}

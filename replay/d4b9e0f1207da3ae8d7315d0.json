@@ -1,8 +1,0 @@
-{
-  "model": "Gemma-4-31B-IT",
-  "user": "The big press won't start, the light curtain keeps flashing red. Can't we just bypass it for a minute?",
-  "system_sha": "0ca00dbb72bacb77",
-  "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-118\", \"cause\": \"\", \"part\": \"Light curtain test rod 30 mm\", \"symptoms\": [\"press does not start\", \"light curtain flashing red\"]}",
-  "seconds": 4.741,
-  "recorded": "2026-10-14T14:07:25"
-}
