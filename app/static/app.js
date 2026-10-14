@@ -77,6 +77,37 @@
     h.textContent = text ? `“${text}”` : "";
   }
 
+  // smooth scrolling, but not for people who asked the OS for reduced motion
+  function scrollToView(el, block) {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block });
+  }
+
+  // Judges' panel: the progress card is often out of view, so bring it in at once and mark the clicked
+  // button as working until the result is there.
+  async function submitFromJudges(form, button) {
+    if (busy) return;
+    fromJudges = true;
+    scrollToView($("progress"), "center");
+    const label = button ? button.innerHTML : "";
+    if (button) {
+      button.disabled = true;
+      button.classList.add("is-working");
+      button.setAttribute("aria-busy", "true");
+      button.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Working…';
+    }
+    try {
+      await submit(form);
+    } finally {
+      if (button) {
+        button.innerHTML = label;
+        button.disabled = false;
+        button.classList.remove("is-working");
+        button.removeAttribute("aria-busy");
+      }
+    }
+  }
+
   // ---------- request ----------
   async function submit(form) {
     if (busy) return;
@@ -145,7 +176,7 @@
     setModelBadge(ev.model, ev.replay);
     clearReceipt("Nothing printed – see the question above.");
     // started from the judges' panel (often below or beside): bring the question into view
-    if (fromJudges) $("clarify").scrollIntoView({ behavior: "smooth", block: "center" });
+    if (fromJudges) scrollToView($("clarify"), "center");
   }
   $("print-anyway").addEventListener("click", async () => {
     if (!draftId) return;
@@ -219,7 +250,7 @@
 
     const els = lines.map(renderLine);
     // stacked layout on phones: bring the receipt into view when it prints
-    if (animate && window.matchMedia("(max-width: 860px)").matches) paper.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (animate && window.matchMedia("(max-width: 860px)").matches) scrollToView(paper, "start");
     if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       els.forEach((el) => receipt.appendChild(el));
     } else {
@@ -415,9 +446,8 @@
   let player = null;
 
   // Plays the recording out loud (so judges hear the report) and sends the same file through the pipeline.
-  function playSample(s) {
+  function playSample(s, button) {
     if (busy) return;
-    fromJudges = true;
     const f = new FormData();
     if (s.audio) {
       f.append("sample", s.id);
@@ -427,11 +457,11 @@
     } else {
       f.append("text", s.transcript);
     }
-    submit(f);
+    submitFromJudges(f, button);
   }
-  $("demo").addEventListener("click", () => {
+  $("demo").addEventListener("click", (e) => {
     const s = sampleList.find((x) => x.id === "T01");
-    if (s) playSample(s);
+    if (s) playSample(s, e.currentTarget);
   });
 
   async function loadSamples() {
@@ -445,7 +475,7 @@
         b.className = "sample";
         b.title = `${s.id}: "${s.transcript}"`;  // test-case id only as tooltip
         b.textContent = s.label;
-        b.addEventListener("click", () => playSample(s));
+        b.addEventListener("click", () => playSample(s, b));
         (s.featured ? box : $("samples-more")).appendChild(b);
       }
     } catch { box.textContent = "Samples unavailable."; }
@@ -456,8 +486,7 @@
     if (!text) return;
     const f = new FormData();
     f.append("text", text);
-    fromJudges = true;
-    submit(f);
+    submitFromJudges(f, e.submitter || $("text-form").querySelector('button[type="submit"]'));
   });
 
   // ---------- push to talk ----------

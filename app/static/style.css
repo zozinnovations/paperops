@@ -196,6 +196,13 @@ body.busy .ptt { opacity: .55; cursor: progress; }
 .btn-demo .play { width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent var(--accent); }
 .demo-caption { text-align: left; margin-top: 6px; font-size: 12px; }
 body.busy .btn-demo, body.busy .sample { opacity: .55; cursor: progress; }
+/* the judges' button that started the running report */
+body.busy .is-working, .is-working:disabled { opacity: 1; cursor: progress; border-color: var(--accent); color: var(--text); }
+.btn-spinner {
+  display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px;
+  border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .btn-spinner { animation-duration: 2.4s; } }
 .text-form { display: flex; gap: 8px; margin-top: 14px; }
 .text-form input {
   flex: 1; min-width: 0; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
