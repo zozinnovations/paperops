@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -60,7 +61,7 @@ def discover_models():
         return []
     _last_discovery[0] = time.time()
     try:
-        _available = [m.id for m in client().models.list().data]
+        _available = [m.id for m in client().with_options(timeout=5, max_retries=0).models.list().data]
     except Exception as e:  # keep running (replay mode) even if the API is down; retry on the next request
         log.warning("model discovery failed: %s", e)
         _available = None
@@ -69,10 +70,13 @@ def discover_models():
 
 
 def chain():
+    """Configured models that the Token Factory lists. Never blocks a request on discovery: while the
+    model list is unknown, use the configured chain and retry discovery in the background."""
     wanted = [PRIMARY_MODEL, *FALLBACK_MODELS]
     if _available is None:
-        discover_models()
-    return [m for m in wanted if m in (_available or [])] or wanted
+        threading.Thread(target=discover_models, daemon=True).start()
+        return wanted
+    return [m for m in wanted if m in _available] or wanted
 
 
 def _key(model, system, user):

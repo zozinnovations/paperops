@@ -90,10 +90,9 @@ def index():
 
 @app.get("/api/status")
 def api_status():
-    if llm._available is None:
-        threading.Thread(target=llm.discover_models, daemon=True).start()
+    models = llm.chain()  # while the model list is unknown this also retries discovery in the background
     return {"printer": printer.status(), "printer_host": printer.PRINTER_HOST or None,
-            "models": llm.chain() if llm._available is not None else [], "stt": stt.BACKEND,
+            "models": models if llm._available is not None else [], "stt": stt.BACKEND,
             "replay_mode": llm.REPLAY_MODE}
 
 
