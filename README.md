@@ -22,7 +22,8 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 3. **Gemma 4 on AMD GPUs via AMD Token Factory** – **one** call to **Gemma-4-31B-IT** on the [AMD Token Factory](https://notebooks.amd.com/tokenfactory) turns the transcript into `{machine_id, error_code, cause, part, symptoms}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
 4. **Lookups in code** – machine manual, spare-part stock and shelf location, approved alternatives, 30-day fault history. Repair steps always come from the manual, so the safety step is always first and the model cannot invent parts.
 5. **Ticket out** – ESC/POS commands → thermal printer, or the on-screen printer simulator, which renders the very same bytes
-6. **Early warning** – recurring faults (e.g. E-402 on HP-400: 3× in 12 days) trigger a root-cause / preventive-maintenance hint
+6. **Ask back instead of wasting paper** – if no machine or no fault is recognised (a slip of the tongue, small talk, "press three" without a fault), nothing is printed: the screen asks "Which machine?" or "What is wrong with HP-400?", and "Print anyway" is one click away.
+7. **Early warning** – recurring faults (e.g. E-402 on HP-400: 3× in 12 days) trigger a root-cause / preventive-maintenance hint
 
 **Measured** (T01, "Press three is stuck. Error E four oh two. The axis is running hot."): speech-to-text ~2 s + Gemma and ticket ~3–5 s = **~6 s from voice to printed ticket** (more when the Token Factory has a slow moment). All 12 test cases in `data/test_transcripts.json` pass with Gemma, 36/36 over three full runs (`python scripts/bench_cases.py`).
 

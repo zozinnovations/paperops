@@ -93,6 +93,13 @@ body.busy .ptt { opacity: .55; cursor: progress; }
   margin: 20px 0 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--panel-2);
   border-radius: 0 8px 8px 0; font-style: italic;
 }
+.clarify {
+  margin: 16px 0 0; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--accent);
+  background: rgb(240 140 46 / .12);
+}
+.clarify-title { margin: 0 0 4px; font-weight: 700; color: var(--accent); font-size: 13px; letter-spacing: .02em; }
+.clarify-q { margin: 0 0 10px; font-size: 16px; line-height: 1.4; }
+.progress li[data-state="skipped"] .ms { font-family: var(--sans); }
 .error { margin: 16px 0 0; padding: 10px 14px; border-radius: 8px; background: rgb(229 72 77 / .14); color: #ffb4b6; }
 
 /* ---------- progress ---------- */

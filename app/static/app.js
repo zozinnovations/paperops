@@ -37,13 +37,14 @@
     document.querySelectorAll("#progress li").forEach((li) => { li.dataset.state = ""; li.querySelector(".ms").textContent = ""; });
     $("total").hidden = true;
     $("error").hidden = true;
+    $("clarify").hidden = true;
   }
-  function setStep(step, state, ms) {
+  function setStep(step, state, ms, note) {
     const li = document.querySelector(`#progress li[data-step="${step}"]`);
     if (!li) return;
     li.dataset.state = state;
     if (ms !== undefined) li.querySelector(".ms").textContent = ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
-    if (state === "skipped") li.querySelector(".ms").textContent = "text input";
+    if (note) li.querySelector(".ms").textContent = note;
   }
   function showError(msg) {
     const e = $("error");
@@ -108,9 +109,37 @@
       loadRecent();
       return;
     }
+    if (ev.step === "clarify") return showClarify(ev);
     if (ev.transcript !== undefined) showHeard(ev.transcript);
-    setStep(ev.step, ev.status, ev.ms);
+    setStep(ev.step, ev.status, ev.ms, ev.note);
   }
+
+  // ---------- nothing recognised: ask back instead of printing ----------
+  let draftId = null;
+  function showClarify(ev) {
+    draftId = ev.draft;
+    $("clarify-q").textContent = ev.question;
+    $("print-anyway").disabled = false;
+    $("clarify").hidden = false;
+    setModelBadge(ev.model, ev.replay);
+  }
+  $("print-anyway").addEventListener("click", async () => {
+    if (!draftId) return;
+    $("print-anyway").disabled = true;
+    try {
+      const res = await fetch(`/api/drafts/${draftId}/print`, { method: "POST" });
+      if (!res.ok) throw new Error(await res.json().then((j) => j.detail).catch(() => res.statusText));
+      const r = await res.json();
+      draftId = null;
+      $("clarify").hidden = true;
+      setStep("printing", "done", r.timings_ms.printing);
+      showTicket(r, true);
+      loadRecent();
+    } catch (err) {
+      $("print-anyway").disabled = false;
+      showError(err.message || String(err));
+    }
+  });
 
   // ---------- receipt ----------
   const PRIO_CLASS = (text) => (/CRITICAL/.test(text) ? "prio-critical" : /HIGH/.test(text) ? "prio-high" : /NORMAL/.test(text) ? "prio-normal" : "");

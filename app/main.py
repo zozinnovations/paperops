@@ -8,6 +8,7 @@ import logging
 import os
 import threading
 import time
+import uuid
 from collections import OrderedDict, defaultdict, deque
 from pathlib import Path
 
@@ -50,6 +51,7 @@ if SAMPLES.exists():
 _busy = threading.BoundedSemaphore(4)       # Token Factory allows 8 concurrent requests per key
 _hits = defaultdict(deque)
 _tickets = OrderedDict()                   # id -> result, newest last (in memory)
+_drafts = OrderedDict()                    # draft id -> report that needs clarification (not printed, no number)
 _next_id = [max(int(t["id"].split("-")[1]) for t in HISTORY) + 1]
 _id_lock = threading.Lock()
 
@@ -117,6 +119,27 @@ def api_ticket(ticket_id: int):
     return _tickets[ticket_id]
 
 
+def _finalize(ticket, text, model_info, base_url, timings):
+    """Number the ticket, render ESC/POS, send it to the printer (or the simulator) and keep it."""
+    t0 = time.perf_counter()
+    ticket_id = _new_id()
+    created = time.strftime("%Y-%m-%d %H:%M")
+    ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
+    footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory" + (" (replay)" if model_info["replay"] else "")
+    data = escpos.render(ticket, ticket_id, created, footer)
+    print_status = printer.send(data)
+    timings = dict(timings, printing=time.perf_counter() - t0)
+    result = {"id": ticket_id, "created": created, "transcript": text, "ticket": ticket,
+              "escpos": base64.b64encode(data).decode(), "printer": print_status, **model_info,
+              "timings_ms": {k: round(v * 1000) for k, v in timings.items()}}
+    _tickets[ticket_id] = result
+    while len(_tickets) > 50:
+        _tickets.popitem(last=False)
+    log.info("ticket #%s %s %s %s (%s, %s)", ticket_id, ticket.get("machine_id"), ticket.get("error_code"),
+             ticket["priority"], model_info["model"], print_status)
+    return result
+
+
 def _event(**kw):
     return json.dumps(kw, ensure_ascii=False) + "\n"
 
@@ -134,7 +157,7 @@ def _process(audio, text, base_url, replay_for=None):
             yield _event(step="listening", status="done", ms=round(s["seconds"] * 1000), transcript=text,
                          backend=s["backend"])
         else:
-            yield _event(step="listening", status="skipped", transcript=text)
+            yield _event(step="listening", status="skipped", note="text input", transcript=text)
         if not text.strip():
             yield _event(step="error", message="No speech recognised - please try again.")
             return
@@ -153,25 +176,24 @@ def _process(audio, text, base_url, replay_for=None):
             nxt = {"understanding": "manual", "manual": "stock", "stock": "printing"}[step]
             yield _event(step=nxt, status="active")
 
-        t0 = time.perf_counter()
-        ticket_id = _new_id()
-        created = time.strftime("%Y-%m-%d %H:%M")
-        ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
-        footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory" + (" (replay)" if model_info["replay"] else "")
-        data = escpos.render(ticket, ticket_id, created, footer)
-        print_status = printer.send(data)
-        timings["printing"] = time.perf_counter() - t0
-        total = time.perf_counter() - t_total
-        yield _event(step="printing", status="done", ms=round(timings["printing"] * 1000), printer=print_status)
+        if ticket.get("clarify"):
+            # nothing recognised (nonsense, small talk, machine without a fault): ask back instead of
+            # wasting paper; the technician can still print it with "Print anyway"
+            draft_id = uuid.uuid4().hex[:12]
+            _drafts[draft_id] = {"ticket": ticket, "transcript": text, "model_info": model_info, "base_url": base_url}
+            while len(_drafts) > 50:
+                _drafts.popitem(last=False)
+            total = time.perf_counter() - t_total
+            yield _event(step="printing", status="skipped", note="not printed")
+            log.info("clarification needed (%s) for %r", ticket.get("machine_id") or "UNKNOWN", text[:80])
+            yield _event(step="clarify", draft=draft_id, question=ticket["clarify"], transcript=text, ticket=ticket,
+                         **model_info, timings_ms={k: round(v * 1000) for k, v in timings.items()},
+                         total_ms=round(total * 1000))
+            return
 
-        result = {"id": ticket_id, "created": created, "transcript": text, "ticket": ticket,
-                  "escpos": base64.b64encode(data).decode(), "printer": print_status, **model_info,
-                  "timings_ms": {k: round(v * 1000) for k, v in timings.items()}, "total_ms": round(total * 1000)}
-        _tickets[ticket_id] = result
-        while len(_tickets) > 50:
-            _tickets.popitem(last=False)
-        log.info("ticket #%s %s %s %s in %.2fs (%s)", ticket_id, ticket.get("machine_id"), ticket.get("error_code"),
-                 ticket["priority"], total, model_info["model"])
+        result = _finalize(ticket, text, model_info, base_url, timings)
+        result["total_ms"] = round((time.perf_counter() - t_total) * 1000)
+        yield _event(step="printing", status="done", ms=result["timings_ms"]["printing"], printer=result["printer"])
         yield _event(step="result", **result)
     except llm.AllModelsFailed as e:
         log.warning("ticket failed: %s", e)
@@ -182,6 +204,20 @@ def _process(audio, text, base_url, replay_for=None):
         yield _event(step="error", message=f"{type(e).__name__}: {e}")
     finally:
         _busy.release()
+
+
+@app.post("/api/drafts/{draft_id}/print")
+def api_print_draft(request: Request, draft_id: str):
+    """ "Print anyway" for a report that needed clarification: turns the draft into a numbered ticket."""
+    if _rate_limited(request.client.host if request.client else "?"):
+        raise HTTPException(429, "Too many requests - please wait a minute.")
+    draft = _drafts.pop(draft_id, None)
+    if draft is None:
+        raise HTTPException(404, "Draft not found or already printed")
+    ticket = {k: v for k, v in draft["ticket"].items() if k != "clarify"}
+    result = _finalize(ticket, draft["transcript"], draft["model_info"], draft["base_url"], {})
+    result["total_ms"] = result["timings_ms"]["printing"]
+    return result
 
 
 @app.post("/api/ticket")

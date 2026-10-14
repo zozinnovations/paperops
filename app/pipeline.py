@@ -111,13 +111,18 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
 
 
 def unknown_ticket(machine=None):
+    """Report without a known machine or fault. "clarify" holds the question to ask back: the app shows it
+    instead of printing (a technician can still choose "Print anyway")."""
     if machine is None:
         return {"machine": "UNKNOWN", "priority": "NORMAL", "error_code": "",
+                "clarify": "Which machine? Please hold the button and say the machine name and what is wrong.",
                 "cause": "Machine not in system - ask the technician for the machine name or ID.",
                 "part_needed": "none", "location": "-",
                 "steps": ["Press the emergency stop and secure the area.",
                           "Machine not in system: report to the shift supervisor with machine name and location."]}
     return {"machine": machine["name"], "machine_id": machine["machine_id"], "priority": "NORMAL", "error_code": "",
+            "clarify": f"What is wrong with {machine['name']}? Please hold the button and describe the fault "
+                       "or say the error code.",
             "cause": "Fault not found in the manual - inspect and report to the shift supervisor.",
             "part_needed": "none", "location": "-",
             "steps": [machine.get("lockout_short") or "Emergency stop, then lock out: " + machine["lockout_procedure"],
