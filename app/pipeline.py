@@ -84,6 +84,10 @@ def safety_first(machine, steps):
     return steps
 
 
+def _ordinal(n):
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
 def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
     count, days = repeats
     ticket = {
@@ -105,8 +109,8 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
     ticket.update(stock_fields(inv))
     if count >= 2:
         # a fault that keeps coming back is not fixed by the quick remedy: point to the root cause from the manual
-        advice = error.get("recurring_advice", "Check the root cause and schedule preventive maintenance")
-        ticket["recurring_fault"] = f"{error['code']} on {machine['machine_id']}: {count}x in {days} days. {advice}."
+        advice = error.get("recurring_advice", "check the root cause and schedule preventive maintenance")
+        ticket["recurring_fault"] = f"{_ordinal(count)} time in {days} days – {advice}"  # wording as in the demo video
         if error.get("recurring_root_causes"):
             ticket["likely_cause"] = " or ".join(
                 c if i == 0 else c[0].lower() + c[1:] for i, c in enumerate(error["recurring_root_causes"]))

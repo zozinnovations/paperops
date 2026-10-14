@@ -31,7 +31,7 @@
           "parts": [{"part": "Lubricating oil ISO VG 46", "qty": "0.5 l"}],
           "est_minutes": 25,
           "recurring_root_causes": ["Dosing pump P2 faulty", "Supply line A3 blocked or cracked"],
-          "recurring_advice": "Check dosing pump P2 and supply line A3 – don't just refill oil"
+          "recurring_advice": "check dosing pump P2 and supply line A3, don't just refill oil"
         },
         {
           "code": "E-215",
