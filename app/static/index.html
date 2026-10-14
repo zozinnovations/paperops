@@ -14,7 +14,7 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="675">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='2' fill='%23f5f1e8'/%3E%3Crect x='6' y='7' width='20' height='5' fill='%23f08c2e'/%3E%3Crect x='9' y='15' width='14' height='2' fill='%23222'/%3E%3Crect x='9' y='19' width='10' height='2' fill='%23222'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="/static/zoz-logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap">
@@ -23,10 +23,12 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="logo" aria-hidden="true"></span>
+      <a class="zoz-mark" href="https://www.zozinnovations.com" target="_blank" rel="noopener" aria-label="ZOZ INNOVATIONS - FZCO website">
+        <img src="/static/zoz-logo.svg" alt="" width="38" height="38">
+      </a>
       <div>
         <h1>PaperOps <span class="tagline">Press. Speak. Fix.</span></h1>
-        <p class="by">by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ Innovations</a></p>
+        <p class="by">by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ INNOVATIONS - FZCO</a></p>
       </div>
     </div>
     <div class="status">
@@ -119,6 +121,18 @@
       <h2 id="judges-title">For judges: try it without a microphone</h2>
       <p class="judges-sub">On the shop floor, workers only use the button or foot pedal. This panel is for testing.</p>
 
+      <div class="voice-help">
+        <p><strong>Your own voice:</strong> hold the orange <b>HOLD TO SPEAK</b> button (or the <kbd>Space</kbd> bar),
+          allow the microphone, say the machine and the problem in English – e.g. “Press three is stuck, error E four oh two” – and let go.</p>
+        <details class="catalog-wrap">
+          <summary>Machines and faults you can mention</summary>
+          <table class="catalog" id="catalog">
+            <thead><tr><th scope="col">Machine</th><th scope="col">You can say</th><th scope="col">Faults</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </details>
+      </div>
+
       <button id="demo" class="btn btn-demo" type="button">
         <span class="play" aria-hidden="true"></span>Play the demo report
       </button>
@@ -160,7 +174,7 @@
 
   <footer class="foot">
     AI on AMD GPUs · Speech stays on our server · Demo data ·
-    Built by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ Innovations</a>
+    Built by <a href="https://www.zozinnovations.com" target="_blank" rel="noopener">ZOZ INNOVATIONS - FZCO</a>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>

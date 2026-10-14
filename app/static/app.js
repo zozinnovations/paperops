@@ -380,6 +380,23 @@
     loadMachines();
   });
 
+  // ---------- what judges can say (from the machine manuals) ----------
+  async function loadCatalog() {
+    try {
+      const machines = await (await fetch("/api/catalog")).json();
+      const tbody = document.querySelector("#catalog tbody");
+      for (const m of machines) {
+        const tr = document.createElement("tr");
+        const said = m.aliases.filter((a) => /[a-z]/.test(a) && a === a.toLowerCase()).slice(0, 2);
+        tr.innerHTML = `<th scope="row"></th><td></td><td></td>`;
+        tr.children[0].textContent = m.name;
+        tr.children[1].textContent = (said.length ? said : m.aliases.slice(0, 2)).map((a) => `“${a}”`).join(", ");
+        tr.children[2].textContent = m.faults.map((f) => `${f.code} ${f.title.toLowerCase()}`).join("; ");
+        tbody.appendChild(tr);
+      }
+    } catch { /* not critical */ }
+  }
+
   // ---------- samples + text ----------
   let sampleList = [];
   let player = null;
@@ -534,6 +551,7 @@
   loadSamples();
   loadRecent();
   loadMachines();
+  loadCatalog();
   if (location.hash === "#health") showTab("health");
   const qs = new URLSearchParams(location.search).get("ticket");
   if (qs) openTicket(qs);

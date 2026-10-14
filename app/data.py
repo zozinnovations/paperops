@@ -3,6 +3,7 @@ import json
 import os
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -35,9 +36,13 @@ def demo_now():
     return max(datetime.fromisoformat(t["ts"]) for t in HISTORY)
 
 
-def demo_stamp():
-    """Receipt date on the demo clock (demo date, current time of day), so it matches "3x in 12 days"."""
-    return f"{demo_now():%Y-%m-%d} {datetime.now():%H:%M}"
+TICKET_TZ = os.getenv("TICKET_TZ", "Europe/Berlin")
+
+
+def receipt_stamp():
+    """Real date and time of printing in the plant's time zone, e.g. "2026-10-15 19:37 CEST".
+    (Only the fault history uses the demo clock.)"""
+    return datetime.now(ZoneInfo(TICKET_TZ)).strftime("%Y-%m-%d %H:%M %Z")
 
 
 def eta_text(eta):

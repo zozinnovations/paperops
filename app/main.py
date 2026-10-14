@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse  # n
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from . import escpos, health, llm, pipeline, printer, stt  # noqa: E402
-from .data import CASES, HISTORY, demo_stamp  # noqa: E402
+from .data import CASES, HISTORY, MANUAL, receipt_stamp  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("paperops")
@@ -147,7 +147,7 @@ def api_printer_test(request: Request):
     cfg = printer.config()
     if not cfg["host"]:
         return {"result": "simulator", "message": "No printer set - tickets appear in the on-screen simulator."}
-    result = printer.send(escpos.test_page(f"{cfg['host']}:{cfg['port']}", demo_stamp()))
+    result = printer.send(escpos.test_page(f"{cfg['host']}:{cfg['port']}", receipt_stamp()))
     return {"result": result, "message": "Test page sent." if result == "printed"
             else f"Printer {cfg['host']}:{cfg['port']} is not reachable."}
 
@@ -188,6 +188,13 @@ def api_machines():
     return health.machine_health([r["ticket"] for r in _tickets.values()])
 
 
+@app.get("/api/catalog")
+def api_catalog():
+    """Machines, their spoken names and fault codes - so judges know what they can say."""
+    return [{"machine_id": m["machine_id"], "name": m["name"], "aliases": m["aliases"],
+             "faults": [{"code": e["code"], "title": e["title"]} for e in m["error_codes"]]} for m in MANUAL]
+
+
 @app.get("/api/tickets")
 def api_tickets():
     return [{"id": r["id"], "machine_id": r["ticket"].get("machine_id") or "UNKNOWN",
@@ -206,7 +213,7 @@ def _finalize(ticket, text, model_info, base_url, timings):
     """Number the ticket, render ESC/POS, send it to the printer (or the simulator) and keep it."""
     t0 = time.perf_counter()
     ticket_id = _new_id()
-    created = demo_stamp()  # demo clock, consistent with "3x in 12 days" and Machine health
+    created = receipt_stamp()  # real time of printing (CEST/CET), not the demo clock
     ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
     footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory"
     data = escpos.render(ticket, ticket_id, created, footer, replay=model_info["replay"])

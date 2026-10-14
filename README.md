@@ -6,7 +6,7 @@ A maintenance technician holds one button (or steps on a foot pedal) and describ
 
 **AI: Gemma 4 on AMD GPUs via AMD Token Factory.** Google's open model `Gemma-4-31B-IT` turns every report into a structured fault; it runs on AMD GPUs through the [AMD Token Factory](https://notebooks.amd.com/tokenfactory).
 
-Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Industry* by [ZOZ Innovations](https://www.zozinnovations.com).
+Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Industry* by [ZOZ INNOVATIONS - FZCO](https://www.zozinnovations.com).
 
 ![PaperOps: hold to speak, progress and the printed repair ticket](app/static/og.png)
 
@@ -39,7 +39,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 | **Shop floor** | `/?mode=floor` | Only the big **HOLD TO SPEAK** button (mouse, touch, space bar or USB foot pedal), the progress and the printed ticket. This is the real product – and the view used in the video. |
 | **Demo for judges** (default) | `/` | The same worker area, plus a clearly separated panel **"For judges: try it without a microphone"**: *Play the demo report* (a recorded voice report), a text field and *Try a scenario* (6 main and 9 more test scenarios). Tabs: *Report a fault* and *Machine health (supervisor)*. *Reset demo* clears the recent tickets for a clean run. |
 
-**How judges test:** open the demo URL – no login. Click *Play the demo report*, or pick a scenario such as *Safety device fault* or *Part out of stock*. To try your own voice, hold the button (or the space bar) and speak; the browser asks for microphone access (HTTPS required).
+**How judges test:** open https://paperops.zozinnovations.com – no login. Click *Play the demo report*, or pick a scenario such as *Safety device fault* or *Part out of stock*. **With your own voice:** hold the orange button (or the space bar), allow the microphone and say the machine and the problem in English, e.g. "Press three is stuck, error E four oh two"; the panel lists the machines, their spoken names and fault codes. Works in current Chrome, Edge, Firefox and Safari (desktop and mobile).
 
 ## How it works
 
@@ -112,7 +112,7 @@ The header shows "Printer: connected"; without a printer the ticket appears in t
 
 ## Deployment
 
-The live app runs at **https://paperops.zozinnovations.com** on the ZOZ Innovations server: a Docker container behind the server's central Traefik reverse proxy, which provides HTTPS (required for the microphone). The flow is fully automated with GitHub Actions:
+The live app runs at **https://paperops.zozinnovations.com** on the ZOZ INNOVATIONS - FZCO server: a Docker container behind the server's central Traefik reverse proxy, which provides HTTPS (required for the microphone). The flow is fully automated with GitHub Actions:
 
 | Workflow | What it does |
 |---|---|
@@ -134,6 +134,7 @@ The live app runs at **https://paperops.zozinnovations.com** on the ZOZ Innovati
 | `REPLAY_MODE` | `fallback` | `off`, `fallback` (only if no model answered within `LLM_BUDGET`), `always` (offline demo) |
 | `LLM_BUDGET` / `LLM_MAX_TOTAL` | `16` / `30` s | time for the live models with / without a recorded run in reserve |
 | `DEMO_NOW` | latest history entry | demo clock for "last 30 days" and recurring faults |
+| `TICKET_TZ` | `Europe/Berlin` | time zone of the date and time printed on the ticket (CEST/CET) |
 | `PRINTER_HOST` / `PRINTER_PORT` | – / `9100` | thermal printer; empty = on-screen simulator |
 | `ALLOW_PRINTER_SETUP` | `0` | `1` enables the printer settings dialog (local installs only) |
 | `DEMO_MODE` | `0` | `1` prints "(replay)" on the receipt when a recorded run is used |
