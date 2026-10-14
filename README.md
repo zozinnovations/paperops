@@ -30,7 +30,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 | Safety step first | **100 %** of printed tickets – one black safety block before any repair step, taken from the manual, never from the model |
 | Part location | **every** ticket that needs a part shows its shelf location (10 / 10), with an approved alternative when the original is out of stock |
 | Unclear reports | nothing is printed for nonsense or an unknown machine – the screen asks back ("Which machine?") instead of guessing |
-| Time from voice to ticket | **typically 3–5 s** (speech-to-text ~0.5 s + Gemma 1.5–3.3 s on the 15 test cases), slower when the Token Factory is busy |
+| Time from voice to ticket | **typically 4–6 s on the live server** (measured 15 Oct, T01–T04 × 3: speech-to-text 1.5–2.3 s on 2 shared vCPUs + Gemma 2.2–5.1 s; total 4.1–7.2 s, median 5.1 s), slower when the Token Factory is busy |
 
 ## Two views
 
@@ -44,7 +44,7 @@ Measured on the 15 test cases in [`data/test_transcripts.json`](data/test_transc
 ## How it works
 
 1. **Voice in** – push-to-talk in the browser: hold the button, the space bar or a USB foot pedal.
-2. **Speech-to-text on our server** – **faster-whisper** (`base.en`, int8, CPU, ~0.5 s), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
+2. **Speech-to-text on our server** – **faster-whisper** (`base.en`, int8, CPU; ~1.7 s on the live server's 2 shared vCPUs, ~0.5 s on a desktop CPU), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
 3. **Gemma 4 on AMD GPUs via AMD Token Factory** – **one** call to **Gemma-4-31B-IT** turns the transcript into `{machine_id, error_code, cause, part, symptoms, evidence}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
 4. **Lookups in code** – machine manual, spare-part stock and shelf location, approved alternatives, 30-day fault history. Repair steps always come from the manual, so the safety step is always first and the model cannot invent parts.
 5. **Evidence check** – Gemma quotes the words that name the machine and the fault; the code checks (fuzzily, with spoken numbers normalised – "E four oh two" = E-402) that they were really said. If not – e.g. a misheard machine name – the ticket still prints with the safety step, under a bold **UNCONFIRMED – verify machine on site** banner and "Did you mean …?".
