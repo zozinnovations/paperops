@@ -10,6 +10,7 @@ import logging
 import os
 import threading
 import time
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,9 +25,11 @@ BASE_URL = os.getenv("RADEON_BASE_URL", "https://developer.amd.com.cn/radeon/api
 PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "Gemma-4-31B-IT")  # Gemma 4 on AMD GPUs
 FALLBACK_MODELS = [m.strip() for m in os.getenv("FALLBACK_MODELS", "MiMo-V2.6-Flash,GLM-5.3-Flash,DeepSeek-V4.1-Flash").split(",") if m.strip()]
 REPLAY_MODE = os.getenv("REPLAY_MODE", "fallback")
-TIMEOUT = float(os.getenv("LLM_TIMEOUT", "15"))     # per model attempt; the next model in the chain is the retry
-BUDGET = float(os.getenv("LLM_BUDGET", "12"))       # all live attempts together, when a replay answer exists
-MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))  # all live attempts together, without a replay answer
+TIMEOUT = float(os.getenv("LLM_TIMEOUT", "15"))       # per model request
+HEDGE_AFTER = float(os.getenv("LLM_HEDGE_AFTER", "6"))  # start the first fallback if the primary has not answered
+HEDGE_STEP = float(os.getenv("LLM_HEDGE_STEP", "3"))    # ... and each further fallback this much later
+BUDGET = float(os.getenv("LLM_BUDGET", "16"))         # all live attempts together, when a replay answer exists
+MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))    # all live attempts together, without a replay answer
 CACHE_DIR, REPLAY_DIR = ROOT / "cache", ROOT / "replay"
 
 class AllModelsFailed(RuntimeError):
@@ -97,8 +100,13 @@ def _cache_put(model, system, user, content, seconds):
     CACHE_DIR.mkdir(exist_ok=True)
     entry = {"model": model, "user": user, "system_sha": hashlib.sha256(system.encode()).hexdigest()[:16],
              "content": content, "seconds": round(seconds, 3), "recorded": time.strftime("%Y-%m-%dT%H:%M:%S")}
-    (CACHE_DIR / f"{_key(model, system, user)}.json").write_text(json.dumps(entry, indent=2, ensure_ascii=False),
-                                                                encoding="utf-8")
+    path = CACHE_DIR / f"{_key(model, system, user)}.json"
+    try:  # keep the fastest recorded run: replay shows its original timing
+        if json.loads(path.read_text(encoding="utf-8"))["seconds"] <= entry["seconds"]:
+            return
+    except (OSError, ValueError, KeyError):
+        pass
+    path.write_text(json.dumps(entry, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def _call(model, system, user, max_tokens, timeout, retries):
@@ -116,49 +124,86 @@ def _call(model, system, user, max_tokens, timeout, retries):
         raise
 
 
+def _attempt(model, system, user, validate, max_tokens, deadline):
+    """One model request: (parsed, content, seconds); raises on API error, timeout or invalid output."""
+    t0 = time.perf_counter()
+    try:
+        resp = _call(model, system, user, max_tokens, timeout=max(1.0, min(TIMEOUT, deadline - t0)), retries=0)
+    except RateLimitError as e:
+        # the limit is per team key, so another model would hit it too: honour Retry-After once
+        wait = float(e.response.headers.get("retry-after") or 2)
+        if wait > deadline - time.perf_counter() - 2:
+            raise
+        log.warning("429 on %s, retrying after %.1f s", model, wait)
+        time.sleep(wait)
+        resp = _call(model, system, user, max_tokens,
+                     timeout=max(1.0, min(TIMEOUT, deadline - time.perf_counter())), retries=0)
+    content = resp.choices[0].message.content or ""
+    parsed = json.loads(content)
+    validate(parsed)
+    return parsed, content, time.perf_counter() - t0
+
+
 def json_call(system, user, validate, max_tokens=400, models=None, replay_for=None):
-    """Returns (parsed, info). Tries each model in the chain; validate(parsed) raises ValueError on bad output.
+    """Returns (parsed, info). validate(parsed) raises ValueError on bad output.
+
+    Hedged fallback chain: the primary model starts at once; if it has not answered after HEDGE_AFTER
+    seconds the first fallback starts too (without cancelling the primary), then one more every HEDGE_STEP
+    seconds - or at once when every running request has failed. The first valid answer wins. Only when no
+    model has answered within the budget does a recorded run from replay/ step in.
 
     replay_for: the canonical text of a sample recording, so a sample replays even when Whisper's
     transcript differs slightly from the stored one."""
     attempts = []
     hit = _cache_get(system, [user, replay_for]) if REPLAY_MODE != "off" else None
     if REPLAY_MODE == "always" and hit:
-        return json.loads(hit["content"]), {"model": hit["model"], "replay": True, "attempts": attempts}
+        return json.loads(hit["content"]), _replay_info(hit, attempts)
 
-    # with a replay answer in reserve, a slow API must not keep judges waiting: cap all attempts at BUDGET
-    deadline = time.perf_counter() + (BUDGET if hit else MAX_TOTAL)
-    for model in models or chain():
-        remaining = deadline - time.perf_counter()
-        if remaining < 1:
-            attempts.append({"model": model, "error": "skipped: time budget used up", "seconds": 0})
-            break
-        t0 = time.perf_counter()
-        try:
-            try:
-                resp = _call(model, system, user, max_tokens, timeout=min(TIMEOUT, remaining), retries=0)
-            except RateLimitError as e:
-                # the limit is per team key, so the next model would hit it too: honour Retry-After once
-                wait = float(e.response.headers.get("retry-after") or 2)
-                if wait > deadline - time.perf_counter() - 2:
-                    raise
-                log.warning("429 on %s, retrying after %.1f s", model, wait)
-                time.sleep(wait)
-                resp = _call(model, system, user, max_tokens,
-                             timeout=max(1.0, min(TIMEOUT, deadline - time.perf_counter())), retries=0)
-            content = resp.choices[0].message.content or ""
-            parsed = json.loads(content)
-            validate(parsed)
-        except Exception as e:  # API error, timeout, invalid JSON or schema -> next model
-            attempts.append({"model": model, "error": f"{type(e).__name__}: {str(e)[:200]}",
-                             "seconds": round(time.perf_counter() - t0, 2)})
-            log.warning("model %s failed: %s", model, attempts[-1]["error"])
-            continue
-        dt = time.perf_counter() - t0
-        _cache_put(model, system, user, content, dt)
-        return parsed, {"model": model, "replay": False, "attempts": attempts, "seconds": dt}
+    queue = list(models or chain())
+    start = time.perf_counter()
+    deadline = start + (BUDGET if hit else MAX_TOTAL)
+    pool = ThreadPoolExecutor(max_workers=len(queue))
+    running = {}                      # future -> (model, started)
+    next_start = start
+    try:
+        while time.perf_counter() < deadline and (queue or running):
+            now = time.perf_counter()
+            if queue and (now >= next_start or not running):
+                model = queue.pop(0)
+                running[pool.submit(_attempt, model, system, user, validate, max_tokens, deadline)] = (model, now)
+                next_start = now + (HEDGE_AFTER if len(running) + len(attempts) == 1 else HEDGE_STEP)
+                continue
+            wake = min(deadline, next_start) if queue else deadline
+            done, _ = wait(running, timeout=max(0.05, wake - now), return_when=FIRST_COMPLETED)
+            for fut in done:
+                model, started = running.pop(fut)
+                try:
+                    parsed, content, seconds = fut.result()
+                except Exception as e:  # API error, timeout, invalid JSON or schema
+                    attempts.append({"model": model, "error": f"{type(e).__name__}: {str(e)[:200]}",
+                                     "seconds": round(time.perf_counter() - started, 2)})
+                    log.warning("model %s failed: %s", model, attempts[-1]["error"])
+                    continue
+                _cache_put(model, system, user, content, seconds)
+                total = time.perf_counter() - start
+                log.info("answered by %s in %.1f s (%.1f s after start)%s", model, seconds, total,
+                         f", after {len(attempts)} failed/slower" if attempts or running else "")
+                return parsed, {"model": model, "replay": False, "attempts": attempts, "seconds": total,
+                                "still_running": [m for m, _ in running.values()]}
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)  # slower requests finish in the background, ignored
 
+    attempts += [{"model": m, "error": "no answer within the time budget", "seconds": round(time.perf_counter() - t, 2)}
+                 for m, t in running.values()]
+    attempts += [{"model": m, "error": "not tried: time budget used up", "seconds": 0} for m in queue]
     if hit:
-        log.warning("live models failed or too slow - answering from replay (%s)", hit["model"])
-        return json.loads(hit["content"]), {"model": hit["model"], "replay": True, "attempts": attempts}
+        log.warning("no live model answered in %.0f s - answering from replay (%s)", time.perf_counter() - start,
+                    hit["model"])
+        return json.loads(hit["content"]), _replay_info(hit, attempts)
     raise AllModelsFailed("All models failed: " + "; ".join(f"{a['model']}: {a['error']}" for a in attempts))
+
+
+def _replay_info(hit, attempts):
+    """Info for a replayed answer: the recorded run's own model time, not how long we waited."""
+    return {"model": hit["model"], "replay": True, "attempts": attempts, "recorded_seconds": hit.get("seconds"),
+            "recorded_at": hit.get("recorded")}

@@ -3,6 +3,6 @@
   "user": "Feed belt is running to one side and rubbing on the frame.",
   "system_sha": "3a03aee8ed89af8c",
   "content": "{\"machine_id\": \"FB-12\", \"error_code\": \"E-322\", \"cause\": \"Tension roller misadjusted\", \"part\": \"\", \"symptoms\": [\"belt running to one side\", \"belt rubbing on frame\"], \"evidence\": \"Feed belt is running to one side and rubbing on the frame.\"}",
-  "seconds": 2.166,
-  "recorded": "2026-10-14T14:47:31"
+  "seconds": 2.699,
+  "recorded": "2026-10-14T14:55:06"
 }

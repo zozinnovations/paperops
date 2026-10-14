@@ -3,6 +3,6 @@
   "user": "The big press won't start, the light curtain keeps flashing red. Can't we just bypass it for a minute?",
   "system_sha": "3a03aee8ed89af8c",
   "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-118\", \"cause\": \"\", \"part\": \"Light curtain test rod 30 mm\", \"symptoms\": [\"press does not start\", \"light curtain flashing red\"], \"evidence\": \"The big press won't start, the light curtain keeps flashing red\"}",
-  "seconds": 14.811,
-  "recorded": "2026-10-14T14:47:03"
+  "seconds": 4.179,
+  "recorded": "2026-10-14T17:12:05"
 }

@@ -3,6 +3,6 @@
   "user": "Welding cell: the seams have pores and the gas warning is on.",
   "system_sha": "3a03aee8ed89af8c",
   "content": "{\"machine_id\": \"SR-16\", \"error_code\": \"E-944\", \"cause\": \"Gas cylinder empty\", \"part\": \"Shielding gas M21 cylinder 20 l\", \"symptoms\": [\"pores in the seam\", \"gas warning\"], \"evidence\": \"Welding cell: the seams have pores and the gas warning is on.\"}",
-  "seconds": 3.697,
-  "recorded": "2026-10-14T14:47:27"
+  "seconds": 3.329,
+  "recorded": "2026-10-14T17:14:37"
 }

@@ -177,6 +177,10 @@ def _process(audio, text, base_url, replay_for=None):
             timings[step] = dt
             if step == "understanding":
                 model_info = {"model": data["model"], "replay": data["replay"], "attempts": data["attempts"]}
+                if data["replay"] and data.get("recorded_seconds") is not None:
+                    # show the recorded run's own timing, not how long we waited for the live models
+                    model_info["waited_ms"] = round(dt * 1000)
+                    timings[step] = dt = data["recorded_seconds"]
             yield _event(step=step, status="done", ms=round(dt * 1000), **({"model": model_info["model"],
                          "replay": model_info["replay"]} if step == "understanding" else {}))
             nxt = {"understanding": "manual", "manual": "stock", "stock": "printing"}[step]
@@ -198,7 +202,8 @@ def _process(audio, text, base_url, replay_for=None):
             return
 
         result = _finalize(ticket, text, model_info, base_url, timings)
-        result["total_ms"] = round((time.perf_counter() - t_total) * 1000)
+        result["total_ms"] = (sum(result["timings_ms"].values()) if model_info["replay"]
+                              else round((time.perf_counter() - t_total) * 1000))
         yield _event(step="printing", status="done", ms=result["timings_ms"]["printing"], printer=result["printer"])
         yield _event(step="result", **result)
     except llm.AllModelsFailed as e:

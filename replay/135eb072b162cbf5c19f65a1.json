@@ -3,6 +3,6 @@
   "user": "Happy for a hundred is losing oil under the cylinder.",
   "system_sha": "3a03aee8ed89af8c",
   "content": "{\"machine_id\": \"HP-400\", \"error_code\": \"E-215\", \"cause\": \"Main cylinder seal worn\", \"part\": \"Main cylinder seal kit HP-400\", \"symptoms\": [\"losing oil under the cylinder\"], \"evidence\": \"Happy for a hundred is losing oil under the cylinder\"}",
-  "seconds": 12.508,
-  "recorded": "2026-10-14T14:48:15"
+  "seconds": 3.16,
+  "recorded": "2026-10-14T14:48:45"
 }

@@ -6,6 +6,7 @@
   const MIN_RECORD_MS = 400;
 
   let busy = false;
+  let primaryModel = null;
   let current = null; // last result shown on the receipt
 
   // ---------- status header ----------
@@ -16,7 +17,7 @@
       p.dataset.state = s.printer;
       p.querySelector(".label").textContent =
         s.printer === "connected" ? "Printer: connected" : s.printer === "offline" ? "Printer: offline (simulator)" : "Printer: simulator";
-      if (s.models.length) setModelBadge(s.models[0]);
+      if (s.models.length) { primaryModel = s.models[0]; setModelBadge(s.models[0]); }
       else $("model-status").textContent = "AI on AMD: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
     } catch {
@@ -99,10 +100,11 @@
     if (ev.step === "result") {
       const total = ev.total_ms;
       const t = $("total");
-      t.innerHTML = `<strong>${(total / 1000).toFixed(1)} s</strong> from report to ticket` +
-        (ev.replay
-          ? `<span class="via">Live AI was slow or unavailable: showing a recorded real run (${ev.model})</span>`
-          : `<span class="via">${ev.model}${ev.attempts && ev.attempts.length ? ` · fallback after ${ev.attempts.length} failed` : ""}</span>`);
+      t.innerHTML = ev.replay
+        ? `<strong>${(total / 1000).toFixed(1)} s</strong> Replay of a recorded live run` +
+          `<span class="via">${ev.model} · live AI did not answer in time, so a recorded real run is shown with its original timing</span>`
+        : `<strong>${(total / 1000).toFixed(1)} s</strong> from report to ticket` +
+          `<span class="via">${ev.model}${primaryModel && ev.model !== primaryModel ? ` (fallback: ${primaryModel} was too slow or failed)` : ""}</span>`;
       t.hidden = false;
       setModelBadge(ev.model, ev.replay);
       showTicket(ev, true);
