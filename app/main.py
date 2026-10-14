@@ -67,6 +67,12 @@ def _new_id():
         return _next_id[0] - 1
 
 
+@app.get("/api/health")
+def api_health():
+    """Liveness for the hosting platform - no external calls."""
+    return {"ok": True}
+
+
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html")
@@ -77,7 +83,7 @@ def api_status():
     if llm._available is None:
         threading.Thread(target=llm.discover_models, daemon=True).start()
     return {"printer": printer.status(), "printer_host": printer.PRINTER_HOST or None,
-            "models": llm.chain() if llm._available is not None else [], "stt": f"{stt.STT_BACKEND}:{stt.WHISPER_MODEL}",
+            "models": llm.chain() if llm._available is not None else [], "stt": stt.BACKEND,
             "replay_mode": llm.REPLAY_MODE}
 
 
@@ -106,7 +112,7 @@ def _event(**kw):
     return json.dumps(kw, ensure_ascii=False) + "\n"
 
 
-def _process(audio, text, base_url):
+def _process(audio, text, base_url, replay_for=None):
     """Generator of NDJSON progress events: listening, understanding, manual, stock, printing, result."""
     t_total = time.perf_counter()
     timings = {}
@@ -126,7 +132,7 @@ def _process(audio, text, base_url):
 
         yield _event(step="understanding", status="active")
         model_info, ticket = {}, None
-        for step, dt, data in pipeline.run(text):
+        for step, dt, data in pipeline.run(text, replay_for=replay_for):
             if step == "ticket":
                 ticket = data
                 break
@@ -158,6 +164,10 @@ def _process(audio, text, base_url):
         log.info("ticket #%s %s %s %s in %.2fs (%s)", ticket_id, ticket.get("machine_id"), ticket.get("error_code"),
                  ticket["priority"], total, model_info["model"])
         yield _event(step="result", **result)
+    except llm.AllModelsFailed as e:
+        log.warning("ticket failed: %s", e)
+        yield _event(step="error", message="The AI service is not reachable right now. "
+                                           "Please try one of the sample recordings - they also work offline.")
     except Exception as e:  # report to the UI instead of a broken stream
         log.exception("ticket failed")
         yield _event(step="error", message=f"{type(e).__name__}: {e}")
@@ -170,12 +180,13 @@ async def api_create_ticket(request: Request, audio: UploadFile | None = File(No
                             sample: str = Form("")):
     if _rate_limited(request.client.host if request.client else "?"):
         raise HTTPException(429, "Too many requests - please wait a minute.")
-    data = None
+    data, replay_for = None, None
     if sample:
         path = SAMPLES / f"{sample}.wav"
         if sample not in CASES or not path.exists():
             raise HTTPException(404, "Unknown sample")
         data = path.read_bytes()
+        replay_for = CASES[sample]["payload"]["transcript"]
     elif audio is not None:
         data = await audio.read()
         if len(data) > MAX_AUDIO_BYTES:
@@ -185,4 +196,4 @@ async def api_create_ticket(request: Request, audio: UploadFile | None = File(No
     text = text.strip()[:1000]
     if not _busy.acquire(blocking=False):  # released when the stream generator finishes
         raise HTTPException(503, "Busy - please try again in a few seconds.")
-    return StreamingResponse(_process(data, text, str(request.base_url)), media_type="application/x-ndjson")
+    return StreamingResponse(_process(data, text, str(request.base_url), replay_for), media_type="application/x-ndjson")

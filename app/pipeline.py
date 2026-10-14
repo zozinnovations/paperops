@@ -118,10 +118,10 @@ def unknown_ticket(machine=None):
                                             "Inspect the machine and report the findings to the shift supervisor."])}
 
 
-def run(transcript, models=None):
+def run(transcript, models=None, replay_for=None):
     """Generator: yields (step, seconds, info) for understanding / manual / stock, then ("ticket", 0, ticket)."""
     t0 = time.perf_counter()
-    fault, info = llm.json_call(SYSTEM_PROMPT, transcript, validate_fault, models=models)
+    fault, info = llm.json_call(SYSTEM_PROMPT, transcript, validate_fault, models=models, replay_for=replay_for)
     yield "understanding", time.perf_counter() - t0, {"fault": fault, **info}
 
     t0 = time.perf_counter()

@@ -33,6 +33,10 @@
           <span class="ptt-timer" id="ptt-timer"></span>
         </button>
         <p class="hint" id="ptt-hint">Hold the button, the <kbd>Space</kbd> bar or the foot pedal while you speak.</p>
+        <button id="demo" class="btn btn-demo" type="button">
+          <span class="play" aria-hidden="true"></span>Play the demo report
+        </button>
+        <p class="hint demo-caption">“Press three is stuck. Error E four oh two. The axis is running hot.” Recorded voice, no microphone needed.</p>
       </div>
 
       <p class="heard" id="heard" hidden></p>
@@ -47,8 +51,8 @@
       </ol>
       <p class="total" id="total" hidden></p>
 
-      <details class="tester" open>
-        <summary>No microphone? Type or use a sample</summary>
+      <div class="tester">
+        <h2>No microphone? Type a report or pick a sample</h2>
         <form id="text-form" class="text-form">
           <label for="text-input" class="sr-only">Fault report</label>
           <input id="text-input" type="text" maxlength="500" autocomplete="off"
@@ -57,7 +61,7 @@
         </form>
         <p class="samples-title">Sample recordings</p>
         <div class="samples" id="samples"></div>
-      </details>
+      </div>
 
       <div class="recent">
         <h2>Recent tickets</h2>

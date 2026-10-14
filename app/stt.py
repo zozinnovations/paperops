@@ -1,7 +1,6 @@
 """Speech-to-text behind one function: transcribe(audio_bytes) -> {"text", "seconds", "backend"}.
 
-STT_BACKEND=local       faster-whisper on CPU (default)
-STT_BACKEND=tokenfactory Whisper on the AMD Token Factory (once AMD enables an audio model)
+faster-whisper on CPU in our backend (final: the Token Factory offers no audio model before the deadline).
 """
 import io
 import json
@@ -10,12 +9,11 @@ import threading
 import time
 from pathlib import Path
 
-STT_BACKEND = os.getenv("STT_BACKEND", "local")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small.en")
 WHISPER_DIR = os.getenv("WHISPER_DIR") or None  # Docker bakes the model in here at build time
 WHISPER_BEAM = int(os.getenv("WHISPER_BEAM", "1"))
 WHISPER_THREADS = int(os.getenv("WHISPER_THREADS") or min(8, os.cpu_count() or 4))  # 8 vs default 4: 1.4 s vs 1.8 s
-TF_STT_MODEL = os.getenv("TF_STT_MODEL", "whisper-large-v3")
+BACKEND = f"faster-whisper:{WHISPER_MODEL}"
 
 _MANUAL = Path(__file__).resolve().parent.parent / "data" / "machines_manual.json"
 
@@ -46,7 +44,13 @@ def _local_model():
     return _model
 
 
-def _transcribe_local(audio):
+def warm_up():
+    """Load the model at startup so the first request is not slow."""
+    _local_model()
+
+
+def transcribe(audio: bytes) -> dict:
+    t0 = time.perf_counter()
     segments, _ = _local_model().transcribe(
         io.BytesIO(audio),  # any format PyAV can decode: wav, webm/opus from the browser, ...
         language="en",
@@ -55,27 +59,5 @@ def _transcribe_local(audio):
         vad_filter=True,
         condition_on_previous_text=False,
     )
-    return " ".join(s.text.strip() for s in segments).strip()
-
-
-def _transcribe_tokenfactory(audio):
-    from openai import OpenAI
-    client = OpenAI(api_key=os.environ["RADEON_API_KEY"], base_url=os.environ["RADEON_BASE_URL"], timeout=30)
-    r = client.audio.transcriptions.create(model=TF_STT_MODEL, file=("audio.wav", audio), language="en",
-                                           prompt=INITIAL_PROMPT)
-    return r.text.strip()
-
-
-def warm_up():
-    """Load the local model at startup so the first request is not slow."""
-    if STT_BACKEND == "local":
-        _local_model()
-
-
-def transcribe(audio: bytes) -> dict:
-    t0 = time.perf_counter()
-    if STT_BACKEND == "tokenfactory":
-        text = _transcribe_tokenfactory(audio)
-    else:
-        text = _transcribe_local(audio)
-    return {"text": text, "seconds": time.perf_counter() - t0, "backend": f"{STT_BACKEND}:{WHISPER_MODEL}"}
+    text = " ".join(s.text.strip() for s in segments).strip()
+    return {"text": text, "seconds": time.perf_counter() - t0, "backend": BACKEND}

@@ -26,7 +26,7 @@ def main():
     case = CASES[args.case]
     t0 = time.perf_counter()
     stt.warm_up()
-    print(f"STT {stt.STT_BACKEND}:{stt.WHISPER_MODEL} (beam {stt.WHISPER_BEAM}) loaded in {time.perf_counter() - t0:.2f}s\n")
+    print(f"STT {stt.BACKEND} (beam {stt.WHISPER_BEAM}) loaded in {time.perf_counter() - t0:.2f}s\n")
 
     for i in range(args.runs):
         s = stt.transcribe(audio)

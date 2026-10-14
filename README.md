@@ -17,14 +17,14 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 
 1. **Voice in** – push-to-talk in the browser (hold the button, the space bar or a USB foot pedal)
 2. **Speech-to-text** – the recording goes to our backend and is transcribed by **faster-whisper** (`small.en`, int8, CPU), primed with the plant's machine names, aliases and error codes. Audio never goes to a third-party cloud.
-3. **AI on AMD GPUs** – **one** call to **MiMo-V2.6-Flash** on the AMD Token Factory turns the transcript into `{machine_id, error_code, cause, part, symptoms}`
+3. **AI on AMD GPUs** – **one** call to **MiMo-V2.6-Flash** on the [AMD Token Factory](https://notebooks.amd.com/tokenfactory) turns the transcript into `{machine_id, error_code, cause, part, symptoms}`. The hackathon organizers confirmed officially that running the AI on the Token Factory "perfectly satisfies" the requirement that a substantial part of the workload runs on AMD.
 4. **Lookups in code** – machine manual, spare-part stock and shelf location, approved alternatives, 30-day fault history. Repair steps always come from the manual, so the safety step is always first and the model cannot invent parts.
 5. **Ticket out** – ESC/POS commands → thermal printer, or the on-screen printer simulator, which renders the very same bytes
 6. **Early warning** – recurring faults (e.g. E-402 on HP-400: 3× in 12 days) trigger a root-cause / preventive-maintenance hint
 
 **Measured** (T01, "Press three is stuck. Error E four oh two. The axis is running hot."): speech-to-text ~2.2 s + AI and ticket ~4.4 s = **~6.5 s from voice to printed ticket**. All 12 test cases in `data/test_transcripts.json` pass (`python scripts/bench_cases.py`).
 
-**Resilience:** the app checks `GET /v1/models` at startup and validates every answer. If a model fails or returns invalid output, it falls back along `FALLBACK_MODELS`. Every successful answer is cached; with `REPLAY_MODE=fallback` (default) recorded real runs from `replay/` are used only if every model fails, `REPLAY_MODE=always` gives a fully offline demo.
+**Resilience:** the app checks `GET /v1/models` at startup and validates every answer. If a model fails or returns invalid output, it falls back along `FALLBACK_MODELS`. For the 12 sample recordings, recorded real runs in `replay/` stand by: if the live models fail or take longer than `LLM_BUDGET` (12 s), the app answers from the recording and says so on screen. `REPLAY_MODE=always` gives a fully offline demo, `off` disables replay.
 
 ## Quick start (Docker)
 
@@ -33,11 +33,25 @@ cp .env.example .env      # add your RADEON_API_KEY
 docker compose up --build
 ```
 
-Open http://localhost:8000 (another host port: `PORT=8002` in `.env`). The first build downloads the Whisper model into the image (image ~1.8 GB). For a smaller, faster model use `WHISPER_MODEL=base.en` in `.env`.
+Open http://localhost:8000 (another port on your machine: `HOST_PORT=8002` in `.env`). The build bakes the Whisper model into the image (image ~1.8 GB), so the container never downloads anything at runtime. For a smaller, faster model use `WHISPER_MODEL=base.en`.
 
-### Hosted with HTTPS
+## Hosting (demo URL for the judges)
 
-Browsers only allow the microphone on HTTPS (or `localhost`). On a server with a domain pointing to it, set `DOMAIN` and `PUBLIC_URL` in `.env` and start the bundled Caddy proxy, which gets a certificate automatically:
+PaperOps needs a long-running process with **2 GB RAM** (faster-whisper keeps its model in memory; the app process uses about 0.4 GB resident, 1.2 GB committed) and **HTTPS** (browsers only allow the microphone on HTTPS). Serverless platforms such as Vercel do not fit. The same Docker image runs on:
+
+| Platform | Config in this repo | Steps |
+|---|---|---|
+| **Railway** (simplest) | `railway.json` | New project → deploy from the GitHub repo → add variable `RADEON_API_KEY` → Settings → Networking → generate domain (HTTPS included) |
+| **Fly.io** | `fly.toml` (2 GB, always on, Frankfurt) | `fly launch --copy-config --no-deploy` → `fly secrets set RADEON_API_KEY=...` → `fly deploy` |
+| **Render** | `render.yaml` (plan *standard*, 2 GB) | New → Blueprint → select the repo → enter `RADEON_API_KEY` |
+
+On every platform: set the API key only as a secret in the dashboard, set `PUBLIC_URL` to the HTTPS address (used in the ticket's QR code), and keep one instance always running so judges never hit a cold start. The platform passes `PORT`; the image listens on it and serves `/api/health` for health checks.
+
+**Start page for judges:** no login. "Play the demo report" plays a recorded voice report and runs it through the whole pipeline, and text input plus 12 sample recordings work without a microphone.
+
+### Own server with a domain
+
+Set `DOMAIN` and `PUBLIC_URL` in `.env` and start the bundled Caddy proxy, which gets a certificate automatically:
 
 ```bash
 docker compose --profile https up -d --build
@@ -56,16 +70,9 @@ uvicorn app.main:app --port 8000
 
 Any ESC/POS 80 mm printer on your network: set `PRINTER_HOST` (and `PRINTER_PORT`, default 9100) in `.env`. The header shows "Printer: connected". Without a printer, the ticket appears in the on-screen simulator, which interprets the same ESC/POS commands. Tick "Show printer commands" to see them.
 
-## Speech-to-text options
+## Speech-to-text
 
-`app/stt.py` is the single entry point (`transcribe(audio)`):
-
-| `STT_BACKEND` | What runs | Notes |
-|---|---|---|
-| `local` (default) | faster-whisper in the container | `WHISPER_MODEL=small.en` (accurate, ~2 s) or `base.en` (~0.7 s) |
-| `tokenfactory` | Whisper on the AMD Token Factory | once AMD offers an audio model; set `TF_STT_MODEL` |
-
-MiMo-V2.6-Flash is documented with audio input, but the Token Factory gateway currently rejects audio content (tested 14 Oct 2026), so speech-to-text runs in our backend.
+`app/stt.py` (`transcribe(audio)`) runs faster-whisper in the container: `WHISPER_MODEL=small.en` (default, ~2 s for a 6 s report) or `base.en` (~0.7 s). The Token Factory has no speech-to-text model (the gateway rejects audio input), so transcription runs in our backend, and audio never leaves our server.
 
 ## Project layout
 

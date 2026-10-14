@@ -90,7 +90,9 @@
       const total = ev.total_ms;
       const t = $("total");
       t.innerHTML = `<strong>${(total / 1000).toFixed(1)} s</strong> from report to ticket` +
-        `<span class="via">${ev.model}${ev.replay ? " · replay" : ""}${ev.attempts && ev.attempts.length ? ` · fallback after ${ev.attempts.length} failed` : ""}</span>`;
+        (ev.replay
+          ? `<span class="via">Live AI was slow or unavailable: showing a recorded real run (${ev.model})</span>`
+          : `<span class="via">${ev.model}${ev.attempts && ev.attempts.length ? ` · fallback after ${ev.attempts.length} failed` : ""}</span>`);
       t.hidden = false;
       showTicket(ev, true);
       loadRecent();
@@ -220,22 +222,40 @@
   }
 
   // ---------- samples + text ----------
+  let sampleList = [];
+  let player = null;
+
+  // Plays the recording out loud (so judges hear the report) and sends the same file through the pipeline.
+  function playSample(s) {
+    if (busy) return;
+    const f = new FormData();
+    if (s.audio) {
+      f.append("sample", s.id);
+      if (player) player.pause();
+      player = new Audio(s.audio);
+      player.play().catch(() => {}); // autoplay may be blocked - the request still runs
+    } else {
+      f.append("text", s.transcript);
+    }
+    submit(f);
+  }
+  $("demo").addEventListener("click", () => {
+    const s = sampleList.find((x) => x.id === "T01");
+    if (s) playSample(s);
+  });
+
   async function loadSamples() {
     const box = $("samples");
     try {
       const samples = await (await fetch("/api/samples")).json();
+      sampleList = samples;
       for (const s of samples) {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "sample";
         b.title = s.transcript;
         b.innerHTML = `<span class="sid">${s.id}</span><span class="sdesc">${s.difficulty.replace(/\s*->.*$/, "").replace(/\(.*\)/, "")}</span>`;
-        b.addEventListener("click", () => {
-          const f = new FormData();
-          if (s.audio) f.append("sample", s.id);
-          else f.append("text", s.transcript);
-          submit(f);
-        });
+        b.addEventListener("click", () => playSample(s));
         box.appendChild(b);
       }
     } catch { box.textContent = "Samples unavailable."; }

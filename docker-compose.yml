@@ -6,7 +6,18 @@ services:
         WHISPER_MODEL: ${WHISPER_MODEL:-small.en}
     env_file: .env
     ports:
-      - "${PORT:-8000}:8000"
+      - "${HOST_PORT:-8000}:8000"
+    environment:
+      PORT: "8000"   # port inside the container; HOST_PORT is the one on your machine
+    # security hardening: read-only root filesystem, no Linux capabilities, no privilege escalation
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/cache:uid=10001,gid=10001
+      - /home/paperops:uid=10001,gid=10001
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   # HTTPS for the hosted demo (browsers only allow the microphone over HTTPS).
