@@ -3,6 +3,7 @@
 Run:  uvicorn app.main:app --port 8000
 """
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -18,11 +19,11 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import FileResponse, StreamingResponse  # noqa: E402
+from fastapi.responses import HTMLResponse, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from . import escpos, health, llm, pipeline, printer, stt  # noqa: E402
-from .data import CASES, HISTORY  # noqa: E402
+from .data import CASES, HISTORY, demo_stamp  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("paperops")
@@ -32,6 +33,9 @@ MAX_AUDIO_BYTES = 5 * 1024 * 1024
 RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MIN", "10"))  # per client IP; the team key allows ~20/min in total
 SAMPLES = ROOT / "samples"
 STATIC = Path(__file__).resolve().parent / "static"
+
+_ASSET_VERSION = hashlib.sha256(b"".join((STATIC / n).read_bytes() for n in ("app.js", "escpos.js", "style.css"))
+                                ).hexdigest()[:10]
 
 app = FastAPI(title="PaperOps")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -87,7 +91,12 @@ def api_health():
 
 @app.get("/")
 def index():
-    return FileResponse(STATIC / "index.html")
+    # versioned asset URLs: a browser that cached an old escpos.js before no-cache headers existed would
+    # still mis-render new printer commands (e.g. ESC 3 shown as a box)
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    for name in ("app.js", "escpos.js", "style.css"):
+        html = html.replace(f"/static/{name}\"", f"/static/{name}?v={_ASSET_VERSION}\"")
+    return HTMLResponse(html)
 
 
 @app.get("/api/status")
@@ -129,7 +138,7 @@ def _finalize(ticket, text, model_info, base_url, timings):
     """Number the ticket, render ESC/POS, send it to the printer (or the simulator) and keep it."""
     t0 = time.perf_counter()
     ticket_id = _new_id()
-    created = time.strftime("%Y-%m-%d %H:%M")
+    created = demo_stamp()  # demo clock, consistent with "3x in 12 days" and Machine health
     ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
     footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory" + (" (replay)" if model_info["replay"] else "")
     data = escpos.render(ticket, ticket_id, created, footer)

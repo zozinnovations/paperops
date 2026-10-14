@@ -35,6 +35,24 @@ def demo_now():
     return max(datetime.fromisoformat(t["ts"]) for t in HISTORY)
 
 
+def demo_stamp():
+    """Receipt date on the demo clock (demo date, current time of day), so it matches "3x in 12 days"."""
+    return f"{demo_now():%Y-%m-%d} {datetime.now():%H:%M}"
+
+
+def eta_text(eta):
+    """Reorder ETA relative to the demo clock: "ETA in 5 days" instead of a date that looks past or odd."""
+    days = (datetime.fromisoformat(eta).date() - demo_now().date()).days
+    if days > 1:
+        return f"ETA in {days} days"
+    return {1: "ETA tomorrow", 0: "ETA today"}.get(days, f"was due {-days} days ago")
+
+
+def machine_reports(machine_id, days=WINDOW_DAYS):
+    """Number of history reports for a machine in the window up to the demo clock."""
+    return sum(1 for t in recent_history(days) if t["machine_id"] == machine_id)
+
+
 def recent_history(days=WINDOW_DAYS):
     """History tickets within the window that ends at the demo clock."""
     now = demo_now()
@@ -105,7 +123,7 @@ def stock_fields(inv):
         return {}
     part, note = inv, None
     reorder = inv.get("reorder") or {}
-    reorder_txt = f"reorder {reorder.get('status', 'unknown')}" + (f", ETA {reorder['eta']}" if reorder.get("eta") else "")
+    reorder_txt = f"reorder {reorder.get('status', 'unknown')}" + (f", {eta_text(reorder['eta'])}" if reorder.get("eta") else "")
     if inv["stock"] == 0 and inv.get("alternative"):
         part = inv["alternative"]
         note = f"Original out of stock: {inv['name']} ({reorder_txt}). Use approved alternative {part['name']}."

@@ -68,7 +68,7 @@ const EscPos = (() => {
         newline();
         i += 1;
       } else {
-        text += String.fromCharCode(b);
+        if (b >= 0x20) text += String.fromCharCode(b); // unknown control bytes are never drawn as glyphs
         i += 1;
       }
     }
