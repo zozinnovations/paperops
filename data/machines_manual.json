@@ -12,6 +12,7 @@
       "aliases": ["Press 3", "press three", "the big press", "HP400"],
       "location": "Hall 4B, Line 2",
       "lockout_procedure": "Turn main switch Q1 OFF, attach padlock, release hydraulic accumulator via valve V7, pressure gauge must read 0 bar.",
+      "lockout_short": "Emergency stop: lock out Q1, release V7 to 0 bar.",
       "error_codes": [
         {
           "code": "E-402",
@@ -78,6 +79,7 @@
       "aliases": ["CNC 2", "mill two", "the five-axis"],
       "location": "Hall 4A, Cell 3",
       "lockout_procedure": "Press emergency stop, turn main switch OFF, attach padlock, wait for spindle to stop.",
+      "lockout_short": "Emergency stop: lock out main switch, wait for spindle stop.",
       "error_codes": [
         {
           "code": "E-701",
@@ -141,6 +143,7 @@
       "aliases": ["Belt 1", "belt one", "feed belt", "conveyor"],
       "location": "Hall 4B, Line 2 (in front of HP-400)",
       "lockout_procedure": "Pull the emergency pull-cord, switch off and lock drive at switch S4.",
+      "lockout_short": "Emergency pull-cord: lock out drive S4.",
       "error_codes": [
         {
           "code": "E-301",
@@ -183,6 +186,7 @@
       "aliases": ["Robot 5", "robot five", "welding cell", "the welder"],
       "location": "Hall 4C, Cell 5",
       "lockout_procedure": "Open cell door only after robot safety stop, key switch to T1, lock main switch.",
+      "lockout_short": "Robot safety stop: key switch to T1, lock out main switch.",
       "error_codes": [
         {
           "code": "E-910",

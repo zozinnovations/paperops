@@ -74,9 +74,10 @@ def pick_part(error, part):
 
 
 def safety_first(machine, steps):
+    """Step 1 is always safety: the manual's first step if it is one, else the machine's short lockout line."""
     steps = list(steps)
     if not any(w in steps[0].lower() for w in SAFETY_WORDS):
-        steps.insert(0, f"Press the emergency stop and lock out: {machine['lockout_procedure']}")
+        steps.insert(0, machine.get("lockout_short") or f"Emergency stop, then lock out: {machine['lockout_procedure']}")
     return steps
 
 
@@ -94,6 +95,7 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
         "part_needed": part or "none",
         "location": "-",
         "steps": safety_first(machine, error["steps"]),  # always the manual's steps, never model text
+        "lockout_procedure": machine["lockout_procedure"],
         "safety": error["safety"],
         "est_minutes": error.get("est_minutes"),
     }
@@ -118,8 +120,9 @@ def unknown_ticket(machine=None):
     return {"machine": machine["name"], "machine_id": machine["machine_id"], "priority": "NORMAL", "error_code": "",
             "cause": "Fault not found in the manual - inspect and report to the shift supervisor.",
             "part_needed": "none", "location": "-",
-            "steps": safety_first(machine, ["Lock out the machine: " + machine["lockout_procedure"],
-                                            "Inspect the machine and report the findings to the shift supervisor."])}
+            "steps": [machine.get("lockout_short") or "Emergency stop, then lock out: " + machine["lockout_procedure"],
+                      "Inspect the machine and report the findings to the shift supervisor."],
+            "lockout_procedure": machine["lockout_procedure"]}
 
 
 def run(transcript, models=None, replay_for=None):
