@@ -5,9 +5,12 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  schedule:
+    - cron: "0 6 * * 1"   # weekly re-scan: new vulnerabilities appear without code changes
 
 permissions:
   contents: read
+  security-events: write   # Trivy results in the Security tab
 
 jobs:
   test-docker:
@@ -65,3 +68,33 @@ jobs:
       - name: Container logs
         if: always()
         run: docker logs paperops 2>&1 | tail -50
+
+      # Security gate: fail on HIGH/CRITICAL vulnerabilities that have a fix (no auto-merge, no deploy);
+      # findings without an upstream fix are reported in the Security tab but do not block.
+      - name: Trivy - block fixable HIGH/CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: paperops:test
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
+
+      - name: Trivy - full report (SARIF)
+        if: always() && github.event_name != 'pull_request'
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: paperops:test
+          scanners: vuln
+          severity: MEDIUM,HIGH,CRITICAL
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: "0"
+
+      - name: Upload Trivy report to the Security tab
+        if: always() && github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-image

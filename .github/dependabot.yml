@@ -4,6 +4,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # faster-whisper 1.2.1 passes metadata_errors to av.open(), removed in PyAV 16 (CI's voice test fails)
+      - dependency-name: av
+        versions: [">=16"]
   - package-ecosystem: docker
     directory: /
     schedule:

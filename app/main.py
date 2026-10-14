@@ -90,7 +90,7 @@ def api_health():
     return {"ok": True}
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def index(request: Request, mode: str = ""):
     # versioned asset URLs: a browser that cached an old escpos.js before no-cache headers existed would
     # still mis-render new printer commands (e.g. ESC 3 shown as a box)

@@ -11,8 +11,10 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+# pip is not needed at runtime and ships its own outdated vendored packages (Trivy findings): remove it
 RUN pip install --upgrade pip \
- && pip install -r requirements.txt
+ && pip install -r requirements.txt \
+ && pip uninstall -y pip
 
 # Security: run as an unprivileged user with a fixed UID and no login shell.
 # Only /models (filled at build time) and /app/cache are writable for it; the app code stays root-owned/read-only.
