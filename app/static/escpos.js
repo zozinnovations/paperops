@@ -3,6 +3,7 @@
 // parse(bytes) -> { lines: [{align, segments:[{text,bold,invert,double,tall}]} | {qr:string} | {cut:true}],
 //                   commands: [{hex, label}] }
 const EscPos = (() => {
+  const CP437 = { 0xfa: "·", 0xf8: "°", 0xe6: "µ" };
   const hex = (arr) => Array.from(arr, (b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
 
   function parse(bytes) {
@@ -35,6 +36,7 @@ const EscPos = (() => {
         if (c === 0x40) { Object.assign(st, { align: "left", bold: false, invert: false, double: false, tall: false }); cmd(i, 2, "ESC @      initialise printer"); i += 2; }
         else if (c === 0x61) { const n = bytes[i + 2]; st.align = ["left", "center", "right"][n] || "left"; cmd(i, 3, `ESC a ${n}    align ${st.align}`); i += 3; }
         else if (c === 0x45) { st.bold = !!bytes[i + 2]; cmd(i, 3, `ESC E ${bytes[i + 2]}    bold ${st.bold ? "on" : "off"}`); i += 3; }
+        else if (c === 0x74) { cmd(i, 3, `ESC t ${bytes[i + 2]}    code page ${bytes[i + 2] === 0 ? "PC437" : bytes[i + 2]}`); i += 3; }
         else if (c === 0x33) { cmd(i, 3, `ESC 3 ${bytes[i + 2]}   line spacing ${bytes[i + 2]} dots`); i += 3; }
         else if (c === 0x32) { cmd(i, 2, "ESC 2      default line spacing"); i += 2; }
         else { cmd(i, 2, "ESC ?      (unknown)"); i += 2; }
@@ -68,7 +70,9 @@ const EscPos = (() => {
         newline();
         i += 1;
       } else {
-        if (b >= 0x20) text += String.fromCharCode(b); // unknown control bytes are never drawn as glyphs
+        // PC437 extras used by app/escpos.py; unknown control bytes are never drawn as glyphs
+        if (b >= 0x80) text += CP437[b] || "?";
+        else if (b >= 0x20) text += String.fromCharCode(b);
         i += 1;
       }
     }

@@ -141,8 +141,8 @@ def _finalize(ticket, text, model_info, base_url, timings):
     ticket_id = _new_id()
     created = demo_stamp()  # demo clock, consistent with "3x in 12 days" and Machine health
     ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
-    footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory" + (" (replay)" if model_info["replay"] else "")
-    data = escpos.render(ticket, ticket_id, created, footer)
+    footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory"
+    data = escpos.render(ticket, ticket_id, created, footer, replay=model_info["replay"])
     print_status = printer.send(data)
     timings = dict(timings, printing=time.perf_counter() - t0)
     result = {"id": ticket_id, "created": created, "transcript": text, "ticket": ticket,

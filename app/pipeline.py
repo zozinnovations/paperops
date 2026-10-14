@@ -104,6 +104,7 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
         "steps": safety_first(machine, error["steps"]),  # always the manual's steps, never model text
         "lockout_procedure": machine["lockout_procedure"],
         "safety": error["safety"],
+        "safety_short": error.get("safety_short"),  # one line for the black safety block on the receipt
         "est_minutes": error.get("est_minutes"),
     }
     ticket.update(stock_fields(inv))
@@ -111,11 +112,10 @@ def build_ticket(machine, error, part, inv, repeats, likely_cause=""):
         # a fault that keeps coming back is not fixed by the quick remedy: point to the root cause from the manual
         advice = error.get("recurring_advice", "check the root cause and schedule preventive maintenance")
         reports = machine_reports(machine["machine_id"])  # all reports on this machine, as in Machine health
-        ticket["recurring_fault"] = (f"{_ordinal(count)} time in {days} days ({reports}× in 30 days) – {advice}"
-                                     )  # wording as in the demo video
+        # wording as in the demo video
+        ticket["recurring_fault"] = f"{_ordinal(count)} time in {days} days ({reports}× in 30 days) – {advice}"
         if error.get("recurring_root_causes"):
-            ticket["likely_cause"] = " or ".join(
-                c if i == 0 else c[0].lower() + c[1:] for i, c in enumerate(error["recurring_root_causes"]))
+            ticket["likely_cause"] = error.get("recurring_likely") or " / ".join(error["recurring_root_causes"])
     return ticket
 
 
