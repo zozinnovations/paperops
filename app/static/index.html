@@ -109,9 +109,10 @@
       <div class="receipt-actions">
         <button class="btn" id="download" type="button" disabled>Download PNG</button>
         <button class="btn" id="print" type="button" disabled>Print (80 mm)</button>
-        <label class="toggle"><input type="checkbox" id="show-cmds"> Show printer commands</label>
+        <!-- judges' detail: the real ESC/POS bytes; shown once a ticket exists, never in shop-floor mode -->
+        <label class="toggle judges-only" id="cmds-toggle" hidden><input type="checkbox" id="show-cmds"> Show printer commands</label>
       </div>
-      <div class="commands" id="commands" hidden>
+      <div class="commands judges-only" id="commands" hidden>
         <p class="commands-note">These ESC/POS bytes go to the thermal printer. The simulator above renders exactly the same bytes.</p>
         <pre id="cmd-list"></pre>
       </div>

@@ -277,6 +277,7 @@
       `\n\n${bytes.length} bytes`;
     $("download").disabled = false;
     $("print").disabled = false;
+    $("cmds-toggle").hidden = false;
     setUrl({ ticket: result.id });
   }
 
@@ -422,6 +423,9 @@
     $("paper").classList.add("idle");
     $("cmd-list").textContent = "";
     $("download").disabled = $("print").disabled = true;
+    // no ticket, no printer commands: hide the toggle instead of showing an empty box
+    $("cmds-toggle").hidden = $("commands").hidden = true;
+    $("show-cmds").checked = false;
     setUrl({ ticket: null });  // a reload must not bring the old ticket back
   }
 
