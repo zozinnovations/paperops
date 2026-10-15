@@ -13,7 +13,6 @@ from types import SimpleNamespace
 os.environ["REPLAY_MODE"] = "off"            # the live chain only, no recorded answers
 os.environ.setdefault("RADEON_API_KEY", "test-key-not-used")
 
-import httpx                                 # noqa: E402
 from fastapi.testclient import TestClient    # noqa: E402
 from openai import InternalServerError       # noqa: E402
 
@@ -27,9 +26,11 @@ FAULT = {"machine_id": "HP-400", "error_code": "E-402", "cause": "Lubrication fa
 
 
 def _503(model):
-    req = httpx.Request("POST", "https://developer.amd.com.cn/radeon/api/v1/chat/completions")
-    return InternalServerError("Service Unavailable", response=httpx.Response(503, request=req),
-                               body={"error": {"message": f"{model}: Service Unavailable"}})
+    """The SDK's exception for an HTTP 503, without a real HTTP response object."""
+    e = InternalServerError.__new__(InternalServerError)
+    Exception.__init__(e, f"Error code: 503 - {model}: Service Unavailable")
+    e.status_code, e.message, e.body = 503, "Service Unavailable", None
+    return e
 
 
 def _answer():
