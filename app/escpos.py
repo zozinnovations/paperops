@@ -7,7 +7,6 @@ Text is ASCII plus three characters from code page PC437 (the default of practic
 printer, selected explicitly with ESC t 0): "·", "°" and "µ". The on-screen simulator renders exactly these
 bytes (app/static/escpos.js knows the same three code points).
 """
-import os
 import textwrap
 import unicodedata
 
@@ -22,7 +21,6 @@ SIZE_NORMAL, SIZE_DOUBLE, SIZE_TALL = GS + b"!\x00", GS + b"!\x11", GS + b"!\x01
 LINE_TIGHT, LINE_DEFAULT = ESC + b"3\x18", ESC + b"2"  # 24-dot spacing = font A height -> solid inverted blocks
 CUT = GS + b"VA\x03"  # partial cut after feeding 3 lines
 
-DEMO_MODE = os.getenv("DEMO_MODE", "0") == "1"  # print "(replay)" on paper only in demo mode
 
 _CP437 = {"·": 0xFA, "°": 0xF8, "µ": 0xE6}
 _ASCII = {"–": "-", "—": "-", "Ø": "D", "ø": "d", "×": "x", "’": "'", "“": '"', "”": '"', "⚠": "!", "…": "...",
@@ -85,6 +83,9 @@ def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
         out += [SIZE_DOUBLE, BOLD_ON, _line(f"#{ticket_id}"), BOLD_OFF, SIZE_NORMAL]
     if created:
         out.append(_line(created))
+    if replay:
+        # a recorded run stood in for the live AI: always say so on paper
+        out += [LF, *_block(["REPLAY - AI NOT REACHABLE".center(WIDTH)])]
     out.append(_line("-" * WIDTH))
 
     # priority, readable on black-and-white thermal paper (shape, not colour):
@@ -147,6 +148,6 @@ def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
     if ticket.get("est_minutes"):
         out.append(_line(f"Repair time: about {ticket['est_minutes']} min"))
     if footer:
-        out += [ALIGN_CENTER, *map(_line, _wrap(footer + (" (replay)" if replay and DEMO_MODE else ""))), ALIGN_LEFT]
+        out += [ALIGN_CENTER, *map(_line, _wrap(footer)), ALIGN_LEFT]
     out += [LF * 3, CUT]
     return b"".join(out)

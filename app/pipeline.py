@@ -138,10 +138,26 @@ def unknown_ticket(machine=None):
             "lockout_procedure": machine["lockout_procedure"]}
 
 
+def replay_matches(fault, transcript):
+    """A recorded run may stand in only for the same report: the transcript itself must name the recorded
+    machine and its fault (error code or symptom). Never print a replay for another machine."""
+    machine = next((m for m in MANUAL if m["machine_id"] == fault["machine_id"]), None)
+    error = pick_error(machine, fault["error_code"], fault["symptoms"]) if machine else None
+    if not machine or not error:
+        return True  # unknown machine / no fault: nothing is printed anyway (ask-back)
+    said = ev_check.check(transcript, transcript, machine, error)  # the transcript as its own quote
+    return said["machine_named"] and said["fault_named"]
+
+
 def run(transcript, models=None, replay_for=None):
     """Generator: yields (step, seconds, info) for understanding / manual / stock, then ("ticket", 0, ticket)."""
     t0 = time.perf_counter()
+    last = dict(llm.LAST)
     fault, info = llm.json_call(SYSTEM_PROMPT, transcript, validate_fault, models=models, replay_for=replay_for)
+    if info["replay"] and not replay_matches(fault, transcript):
+        llm.LAST.update(last)
+        raise llm.AllModelsFailed(f"replay for {fault['machine_id']} {fault['error_code']} does not match what "
+                                  f"was said: {transcript[:80]!r}")
     yield "understanding", time.perf_counter() - t0, {"fault": fault, **info}
 
     t0 = time.perf_counter()

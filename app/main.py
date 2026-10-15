@@ -225,7 +225,8 @@ def _finalize(ticket, text, model_info, base_url, timings):
     ticket_id = _new_id()
     created = receipt_stamp()  # real time of printing (CEST/CET), not the demo clock
     ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
-    footer = f"{model_info['model']} on AMD GPUs via AMD Token Factory"
+    footer = (f"Replay of a recorded {model_info['model']} run (AMD Token Factory)" if model_info["replay"]
+              else f"{model_info['model']} on AMD GPUs via AMD Token Factory")
     data = escpos.render(ticket, ticket_id, created, footer, replay=model_info["replay"])
     print_status = printer.send(data)
     timings = dict(timings, printing=time.perf_counter() - t0)
@@ -302,8 +303,7 @@ def _process(audio, text, base_url, replay_for=None):
         yield _event(step="result", **result)
     except llm.AllModelsFailed as e:
         log.warning("ticket failed: %s", e)
-        yield _event(step="error", message="The AI service is not reachable right now. "
-                                           "Please try one of the sample recordings - they also work offline.")
+        yield _event(step="error", message="The AI is not reachable right now. Please try again in a minute.")
     except Exception as e:  # report to the UI instead of a broken stream
         log.exception("ticket failed")
         yield _event(step="error", message=f"{type(e).__name__}: {e}")
