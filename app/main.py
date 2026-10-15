@@ -66,7 +66,8 @@ _id_lock = threading.Lock()
 @app.on_event("startup")
 def startup():
     # model discovery and Whisper loading in the background, so the server answers immediately
-    threading.Thread(target=llm.discover_models, daemon=True).start()
+    threading.Thread(target=llm.discover_models, kwargs={"force": True}, daemon=True).start()
+    threading.Thread(target=llm.refresh_models_forever, daemon=True).start()
     threading.Thread(target=stt.warm_up, daemon=True).start()
 
 
@@ -88,8 +89,9 @@ def _new_id():
 
 @app.get("/api/health")
 def api_health():
-    """Liveness for the hosting platform - no external calls."""
-    return {"ok": True}
+    """Liveness for the hosting platform - no external calls. "models": which chain models the last
+    GET /v1/models listed and which model answered last (check this before recording the video)."""
+    return {"ok": True, "models": llm.models_state()}
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
@@ -178,7 +180,8 @@ def api_status():
             "stt_threads": stt.WHISPER_THREADS, "stt_cpus": stt.CPUS, "stt_warmup_s": stt.WARMUP["seconds"],
             "replay_mode": llm.REPLAY_MODE,
             # header badge: the model that really answered last, never just the configured one
-            "last_model": llm.LAST["model"], "last_replay": llm.LAST["replay"], "primary_down": llm.primary_down()}
+            "primary": llm.PRIMARY_MODEL, "last_model": llm.LAST["model"], "last_replay": llm.LAST["replay"],
+            "primary_available": llm.primary_available()}
 
 
 @app.get("/api/samples")

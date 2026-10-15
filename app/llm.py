@@ -37,6 +37,9 @@ MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))    # all live attempts toget
 # A model that just failed hard (5xx such as 503, connection error, timeout) counts as down for this long:
 # while it is down, the next fallback starts at the same moment instead of after LLM_HEDGE_AFTER.
 DOWN_FOR = float(os.getenv("LLM_DOWN_FOR", "120"))
+# GET /v1/models again this often (and soon after a hard model error): a model that disappears is skipped,
+# one that comes back is used again - no restart needed
+REFRESH_EVERY = float(os.getenv("LLM_MODELS_REFRESH", "300"))
 CACHE_DIR, REPLAY_DIR = ROOT / "cache", ROOT / "replay"
 
 class AllModelsFailed(RuntimeError):
@@ -66,6 +69,27 @@ def primary_down():
     return is_down(PRIMARY_MODEL)
 
 
+def is_listed(model):
+    """Listed by the last successful GET /v1/models (unknown list counts as listed)."""
+    return _available is None or any(base_name(m) == base_name(model) for m in _available)
+
+
+def primary_available():
+    return is_listed(PRIMARY_MODEL) and not primary_down()
+
+
+def models_state():
+    """For /api/health and /api/status: which chain models are listed now and who answered last."""
+    wanted = [PRIMARY_MODEL, *FALLBACK_MODELS]
+    known = _available is not None
+    return {"primary": PRIMARY_MODEL, "primary_available": primary_available(),
+            "listed": [m for m in wanted if known and is_listed(m)],
+            "missing": [m for m in wanted if known and not is_listed(m)],
+            "down": [m for m in wanted if is_down(m)],
+            "list_checked_s_ago": round(time.time() - _last_discovery[0]) if _last_discovery[0] else None,
+            "last_answered": LAST["model"], "last_replay": LAST["replay"]}
+
+
 def client():
     global _client
     if _client is None:
@@ -80,19 +104,33 @@ def client():
 _last_discovery = [0.0]
 
 
-def discover_models():
-    """GET /v1/models at startup (retried at most every 30 s while it fails); never rely on one hard-coded model."""
+def discover_models(force=False):
+    """GET /v1/models: at startup, every REFRESH_EVERY seconds and after a hard model error (at most every
+    30 s unless forced). Never rely on one hard-coded model."""
     global _available
-    if _available is None and time.time() - _last_discovery[0] < 30:
-        return []
+    if not force and time.time() - _last_discovery[0] < 30:
+        return _available or []
     _last_discovery[0] = time.time()
     try:
-        _available = [m.id for m in client().with_options(timeout=5, max_retries=0).models.list().data]
-    except Exception as e:  # keep running (replay mode) even if the API is down; retry on the next request
+        listed = [m.id for m in client().with_options(timeout=5, max_retries=0).models.list().data]
+    except Exception as e:  # keep the last known list (or none: then the whole chain is tried); retry later
         log.warning("model discovery failed: %s", e)
-        _available = None
-        return []
+        return _available or []
+    wanted = [PRIMARY_MODEL, *FALLBACK_MODELS]
+    before = {m for m in wanted if is_listed(m)} if _available is not None else None
+    _available = listed
+    now = {m for m in wanted if is_listed(m)}
+    if before is None or now != before:
+        log.info("models listed: %s%s", ", ".join(m for m in wanted if m in now) or "none of the chain",
+                 f" - missing: {', '.join(m for m in wanted if m not in now)}" if now != set(wanted) else "")
     return _available
+
+
+def refresh_models_forever():
+    """Background thread: re-check the model list, so a returning Gemma is used again without a restart."""
+    while True:
+        time.sleep(REFRESH_EVERY)
+        discover_models(force=True)
 
 
 def base_name(model_id):
@@ -205,7 +243,7 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
     attempts = []
     hit = _cache_get(system, [user, replay_for]) if REPLAY_MODE != "off" else None
     if REPLAY_MODE == "always" and hit:
-        LAST.update(model=hit["model"], replay=True)
+        LAST.update(model=base_name(hit["model"]), replay=True)
         return json.loads(strip_code_fence(hit["content"])), _replay_info(hit, attempts)
 
     queue = list(models or chain())
@@ -235,8 +273,9 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
                     attempts.append({"model": model, "error": f"{type(e).__name__}: {str(e)[:200]}",
                                      "seconds": round(time.perf_counter() - started, 2)})
                     log.warning("model %s failed: %s", model, attempts[-1]["error"])
-                    if _hard_failure(e):
+                    if _hard_failure(e) or getattr(e, "status_code", None) == 404:
                         _down[base_name(model)] = time.monotonic()
+                        threading.Thread(target=discover_models, daemon=True).start()  # still listed?
                     continue  # nothing else running -> the loop starts the next model at once
                 _cache_put(model, system, user, content, seconds)
                 _down.pop(base_name(model), None)
@@ -256,12 +295,12 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
     if hit:
         log.warning("no live model answered in %.0f s - answering from replay (%s)", time.perf_counter() - start,
                     hit["model"])
-        LAST.update(model=hit["model"], replay=True)
+        LAST.update(model=base_name(hit["model"]), replay=True)
         return json.loads(strip_code_fence(hit["content"])), _replay_info(hit, attempts)
     raise AllModelsFailed("All models failed: " + "; ".join(f"{a['model']}: {a['error']}" for a in attempts))
 
 
 def _replay_info(hit, attempts):
     """Info for a replayed answer: the recorded run's own model time, not how long we waited."""
-    return {"model": hit["model"], "replay": True, "attempts": attempts, "recorded_seconds": hit.get("seconds"),
+    return {"model": base_name(hit["model"]), "replay": True, "attempts": attempts, "recorded_seconds": hit.get("seconds"),
             "recorded_at": hit.get("recorded")}

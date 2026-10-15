@@ -31,11 +31,13 @@
       setupBtn.disabled = !s.printer_setup;
       setupBtn.title = s.printer_setup ? "Printer address, port and test print"
         : "Disabled on the hosted demo. On a local install set ALLOW_PRINTER_SETUP=1.";
-      if (s.models.length) primaryModel = s.models[0];
-      // claim a model only if it answered last; before the first ticket the primary, unless it is failing now
-      if (s.last_model) setModelBadge(s.last_model, s.last_replay);
-      else if (s.primary_down) setModelBadge(null);
-      else if (primaryModel) setModelBadge(primaryModel);
+      primaryModel = s.primary || s.models[0] || null;  // configured primary, even while it is not listed
+      // name a model only if it really answered. Primary (Gemma) unavailable: the fallback that answered
+      // last, else the neutral "AI on AMD GPUs" - never Gemma while it is missing or failing
+      const lastIsPrimary = s.last_model && s.last_model === s.primary;
+      if (s.last_model && (s.primary_available || !lastIsPrimary)) setModelBadge(s.last_model, s.last_replay);
+      else if (!s.primary_available) setModelBadge(null);
+      else if (s.models.length) setModelBadge(primaryModel);  // listed and healthy, no answer yet
       else $("model-status").textContent = "AI: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
     } catch {
@@ -162,7 +164,7 @@
         ? `<strong>${(total / 1000).toFixed(1)} s</strong> Replay of a recorded live run` +
           `<span class="via">${ev.model} · live AI did not answer in time, so a recorded real run is shown with its original timing</span>`
         : `<strong>${(total / 1000).toFixed(1)} s</strong> from report to ticket` +
-          `<span class="via">${ev.model}${primaryModel && ev.model !== primaryModel ? ` (fallback: ${primaryModel} was too slow or failed)` : ""}</span>`;
+          `<span class="via">${ev.model}${primaryModel && ev.model !== primaryModel ? ` (fallback: ${primaryModel} unavailable or too slow)` : ""}</span>`;
       t.hidden = false;
       setModelBadge(ev.model, ev.replay);
       showTicket(ev, true);
