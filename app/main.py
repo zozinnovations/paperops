@@ -176,7 +176,9 @@ def api_status():
             "printer_setup": printer.ALLOW_SETUP,
             "models": models if llm._available is not None else [], "stt": stt.BACKEND,
             "stt_threads": stt.WHISPER_THREADS, "stt_cpus": stt.CPUS, "stt_warmup_s": stt.WARMUP["seconds"],
-            "replay_mode": llm.REPLAY_MODE}
+            "replay_mode": llm.REPLAY_MODE,
+            # header badge: the model that really answered last, never just the configured one
+            "last_model": llm.LAST["model"], "last_replay": llm.LAST["replay"], "primary_down": llm.primary_down()}
 
 
 @app.get("/api/samples")

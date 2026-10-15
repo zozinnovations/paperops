@@ -15,7 +15,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import APIStatusError, OpenAI, RateLimitError
+from openai import APIConnectionError, APIStatusError, OpenAI, RateLimitError
 
 from .data import ROOT
 
@@ -34,6 +34,9 @@ HEDGE_AFTER = float(os.getenv("LLM_HEDGE_AFTER", "5"))  # the next fallback star
 HEDGE_STEP = float(os.getenv("LLM_HEDGE_STEP", "3"))    # ... and each further fallback this much later
 BUDGET = float(os.getenv("LLM_BUDGET", "16"))         # all live attempts together, when a replay answer exists
 MAX_TOTAL = float(os.getenv("LLM_MAX_TOTAL", "30"))    # all live attempts together, without a replay answer
+# A model that just failed hard (5xx such as 503, connection error, timeout) counts as down for this long:
+# while it is down, the next fallback starts at the same moment instead of after LLM_HEDGE_AFTER.
+DOWN_FOR = float(os.getenv("LLM_DOWN_FOR", "120"))
 CACHE_DIR, REPLAY_DIR = ROOT / "cache", ROOT / "replay"
 
 class AllModelsFailed(RuntimeError):
@@ -45,6 +48,22 @@ _available = None          # model ids from GET /v1/models
 # model -> reasoning_effort it accepts. Default "none" = thinking off (Gemma: reasoning is only on/off;
 # MiMo/DeepSeek accept "none"); GLM-5.3-Flash only takes low/medium/high and is switched on first failure.
 _reasoning = {"GLM-5.3-Flash": "low"}
+_down = {}                  # base model name -> time.monotonic() of its last hard failure
+LAST = {"model": None, "replay": False}   # who answered the last request (header badge in the UI)
+
+
+def _hard_failure(e):
+    """Service-side failure (503, connection error, timeout) - unlike invalid output, it will repeat."""
+    return isinstance(e, APIConnectionError) or (isinstance(e, APIStatusError) and e.status_code >= 500)
+
+
+def is_down(model):
+    t = _down.get(base_name(model))
+    return t is not None and time.monotonic() - t < DOWN_FOR
+
+
+def primary_down():
+    return is_down(PRIMARY_MODEL)
 
 
 def client():
@@ -186,6 +205,7 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
     attempts = []
     hit = _cache_get(system, [user, replay_for]) if REPLAY_MODE != "off" else None
     if REPLAY_MODE == "always" and hit:
+        LAST.update(model=hit["model"], replay=True)
         return json.loads(strip_code_fence(hit["content"])), _replay_info(hit, attempts)
 
     queue = list(models or chain())
@@ -202,6 +222,8 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
                 running[pool.submit(_attempt, model, system, user, validate, max_tokens, deadline)] = (model, now)
                 launched = len(running) + len(attempts)
                 next_start = now + (0 if launched < RACE else HEDGE_AFTER if launched == RACE else HEDGE_STEP)
+                if is_down(model):
+                    next_start = now  # failed hard a moment ago (e.g. 503): don't wait for it, start the next too
                 continue
             wake = min(deadline, next_start) if queue else deadline
             done, _ = wait(running, timeout=max(0.05, wake - now), return_when=FIRST_COMPLETED)
@@ -213,8 +235,12 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
                     attempts.append({"model": model, "error": f"{type(e).__name__}: {str(e)[:200]}",
                                      "seconds": round(time.perf_counter() - started, 2)})
                     log.warning("model %s failed: %s", model, attempts[-1]["error"])
-                    continue
+                    if _hard_failure(e):
+                        _down[base_name(model)] = time.monotonic()
+                    continue  # nothing else running -> the loop starts the next model at once
                 _cache_put(model, system, user, content, seconds)
+                _down.pop(base_name(model), None)
+                LAST.update(model=model, replay=False)
                 total = time.perf_counter() - start
                 others = [f"{a['model']} failed" for a in attempts] + [f"{m} still running" for m, _ in running.values()]
                 log.info("answered by %s in %.1f s (%.1f s after start)%s", model, seconds, total,
@@ -230,6 +256,7 @@ def json_call(system, user, validate, max_tokens=400, models=None, replay_for=No
     if hit:
         log.warning("no live model answered in %.0f s - answering from replay (%s)", time.perf_counter() - start,
                     hit["model"])
+        LAST.update(model=hit["model"], replay=True)
         return json.loads(strip_code_fence(hit["content"])), _replay_info(hit, attempts)
     raise AllModelsFailed("All models failed: " + "; ".join(f"{a['model']}: {a['error']}" for a in attempts))
 

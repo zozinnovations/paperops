@@ -31,7 +31,11 @@
       setupBtn.disabled = !s.printer_setup;
       setupBtn.title = s.printer_setup ? "Printer address, port and test print"
         : "Disabled on the hosted demo. On a local install set ALLOW_PRINTER_SETUP=1.";
-      if (s.models.length) { primaryModel = s.models[0]; setModelBadge(s.models[0]); }
+      if (s.models.length) primaryModel = s.models[0];
+      // claim a model only if it answered last; before the first ticket the primary, unless it is failing now
+      if (s.last_model) setModelBadge(s.last_model, s.last_replay);
+      else if (s.primary_down) setModelBadge(null);
+      else if (primaryModel) setModelBadge(primaryModel);
       else $("model-status").textContent = "AI: connecting…";
       if (!s.models.length) setTimeout(loadStatus, 3000);
     } catch {
@@ -39,12 +43,17 @@
     }
   }
 
-  // "Gemma 4 on AMD GPUs" for Gemma, otherwise the model id (e.g. after a fallback)
+  // "Gemma 4" for Gemma, otherwise the short model name (e.g. "MiMo" after a fallback)
   // short line in the header, details in the tooltip
   function setModelBadge(model, replay) {
-    const plain = String(model).split("/").pop();  // "self-dploy/Gemma-4-31B-IT" -> "Gemma-4-31B-IT"
-    const name = /^Gemma-4/i.test(plain) ? "Gemma 4" : plain;
     const badge = $("model-status");
+    if (!model) {  // no answer yet and the primary model is unavailable: say nothing about a model
+      badge.textContent = "AI on AMD GPUs";
+      badge.title = "AMD Token Factory";
+      return;
+    }
+    const plain = String(model).split("/").pop();  // "self-dploy/Gemma-4-31B-IT" -> "Gemma-4-31B-IT"
+    const name = /^Gemma-4/i.test(plain) ? "Gemma 4" : plain.replace(/-V?[\d.]+.*$/i, "");  // "MiMo-V2.6-Flash" -> "MiMo"
     badge.textContent = `AI: ${name} on AMD${replay ? " (replay)" : ""}`;
     badge.title = `${model} on AMD GPUs via AMD Token Factory` +
       (primaryModel && model !== primaryModel ? ` (fallback for ${primaryModel})` : "") +
@@ -500,6 +509,27 @@
     return "";
   }
 
+  // Why getUserMedia failed, in words that say what to do. The browser often shows no prompt at all:
+  // the site was blocked before, the OS denies the browser the microphone, or the page is in a frame.
+  async function micErrorText(err) {
+    console.warn("microphone:", err && err.name, err && err.message);
+    const fallback = " Or use the text input or the samples.";
+    if (!window.isSecureContext || !navigator.mediaDevices) return "The microphone needs HTTPS." + fallback;
+    // the site permission first: some browsers report a blocked site as "no device"
+    let state = "";
+    try { state = (await navigator.permissions.query({ name: "microphone" })).state; } catch { /* Firefox/Safari */ }
+    if (window.top !== window.self) return "The microphone does not work inside this embedded view. Open PaperOps in its own browser tab." + fallback;
+    if (state === "denied") {
+      return "Microphone blocked for this site. Click the icon left of the address bar → Microphone → Allow, then reload the page." + fallback;
+    }
+    const name = err && err.name;
+    if (name === "NotFoundError" || name === "OverconstrainedError") return "No microphone found. Connect one and try again." + fallback;
+    if (name === "NotReadableError" || name === "AbortError") return "The microphone is in use by another app (e.g. a video call). Close it and try again." + fallback;
+    // site not blocked, yet denied without a prompt: the operating system blocks the browser
+    return "Your system blocks the microphone for this browser. Windows: Settings → Privacy & security → Microphone → " +
+      "allow access for apps and desktop apps. macOS: System Settings → Privacy & Security → Microphone → turn on your browser." + fallback;
+  }
+
   async function startRecording() {
     if (busy || recorder) return;
     fromJudges = false;
@@ -510,8 +540,7 @@
       }
     } catch (err) {
       wantRecording = false;
-      showError(window.isSecureContext ? "Microphone access was blocked. Allow it in the browser, or use text input."
-        : "The microphone needs HTTPS. Use text input or the samples.");
+      showError(await micErrorText(err));
       return;
     }
     if (!wantRecording) return; // released while the permission prompt was open

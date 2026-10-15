@@ -33,6 +33,9 @@ jobs:
 
       # End-to-end without an API key: REPLAY_MODE=always answers from the recorded runs in replay/,
       # so speech-to-text, pipeline, ESC/POS and the web app are all exercised.
+      - name: Unit tests in the image (Gemma 503 -> fallback model prints the ticket)
+        run: docker run --rm -v "$PWD/tests:/app/tests:ro" -e PYTHONDONTWRITEBYTECODE=1 paperops:test python -m unittest discover -s tests -t . -v
+
       - name: Start container
         run: docker run -d --name paperops -p 8000:8000 -e REPLAY_MODE=always paperops:test
 
