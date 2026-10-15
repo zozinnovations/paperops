@@ -124,14 +124,16 @@ def unknown_ticket(machine=None):
     if machine is None:
         return {"machine": "UNKNOWN", "priority": "NORMAL", "error_code": "",
                 "clarify": "Which machine? Please hold the button and say the machine name and what is wrong.",
-                "cause": "Machine not in system - ask the technician for the machine name or ID.",
+                "cause": "Machine not in system.",
+                "safety_short": "FIRST: PRESS E-STOP · SECURE THE AREA",
                 "part_needed": "none", "location": "-",
                 "steps": ["Press the emergency stop and secure the area.",
-                          "Machine not in system: report to the shift supervisor with machine name and location."]}
+                          "Tell your shift lead the machine name and place."]}
     return {"machine": machine["name"], "machine_id": machine["machine_id"], "priority": "NORMAL", "error_code": "",
             "clarify": f"What is wrong with {machine['name']}? Please hold the button and describe the fault "
                        "or say the error code.",
             "cause": "Fault not found in the manual - inspect and report to the shift supervisor.",
+            "safety_short": "FIRST: " + (machine.get("lockout_short") or "Press E-stop and lock out").rstrip(".").upper(),
             "part_needed": "none", "location": "-",
             "steps": [machine.get("lockout_short") or "Emergency stop, then lock out: " + machine["lockout_procedure"],
                       "Inspect the machine and report the findings to the shift supervisor."],
@@ -169,6 +171,7 @@ def run(transcript, models=None, replay_for=None):
     t0 = time.perf_counter()
     if not machine or not error:
         ticket = unknown_ticket(machine)
+        ticket["report"] = transcript.strip()  # the worker's own words: the only clue on paper
         yield "stock", time.perf_counter() - t0, {"skipped": True}
     else:
         part = pick_part(error, fault["part"])

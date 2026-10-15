@@ -18,7 +18,7 @@ os.environ.setdefault("RADEON_API_KEY", "test-key-not-used")
 from fastapi.testclient import TestClient    # noqa: E402
 from openai import InternalServerError       # noqa: E402
 
-from app import llm, main                    # noqa: E402
+from app import escpos, llm, main            # noqa: E402
 
 GEMMA, MIMO = "Gemma-4-31B-IT", "MiMo-V2.6-Flash"
 ALL = [f"self-dploy/{GEMMA}", MIMO, "GLM-5.3-Flash", "DeepSeek-V4.1-Flash"]
@@ -71,7 +71,7 @@ class GemmaUnavailable(unittest.TestCase):
         self.assertFalse(result["replay"])
         self.assertEqual(result["ticket"]["machine_id"], "HP-400")
         receipt = base64.b64decode(result["escpos"])
-        self.assertIn(f"{model} on AMD GPUs".encode(), receipt)  # receipt footer
+        self.assertIn(escpos._enc(f"{model} · AMD Token Factory"), receipt)  # receipt footer, one line
         if model != GEMMA:
             self.assertNotIn(b"Gemma", receipt)
 

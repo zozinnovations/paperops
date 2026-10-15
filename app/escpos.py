@@ -114,6 +114,8 @@ def render(ticket, ticket_id=None, created=None, footer=None, replay=False):
     out += map(_line, _wrap(" · ".join(x for x in [ticket.get("error_code"), ticket.get("cause")] if x)))
     if ticket.get("likely_cause"):
         out.append(_line(f"Likely: {ticket['likely_cause']}"))
+    if ticket.get("report"):  # unknown machine / fault: print what the worker said
+        out += map(_line, _wrap(f"Report: '{ticket['report']}'", indent="  "))
 
     # ONE black safety block instead of "step 1" plus a separate warning
     steps = list(ticket.get("steps", []))

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PaperOps</title>
+  <title>PaperOps – Press. Speak. Fix.</title>
   <meta name="description" content="Voice-driven maintenance dispatcher: press, speak, get a printed repair ticket. Gemma 4 on AMD GPUs via AMD Token Factory.">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -24,7 +24,7 @@
   <header class="topbar">
     <div class="brand">
       <a class="zoz-mark" href="https://www.zozinnovations.com" target="_blank" rel="noopener" aria-label="ZOZ INNOVATIONS - FZCO website">
-        <img src="/static/zoz-logo.svg" alt="" width="38" height="38">
+        <img src="/static/zoz-logo.svg" alt="ZOZ INNOVATIONS - FZCO logo" width="38" height="38">
       </a>
       <div>
         <h1>PaperOps <span class="tagline">Press. Speak. Fix.</span></h1>
@@ -34,7 +34,7 @@
     <div class="status">
       <span class="pill" id="printer-status"><span class="dot"></span><span class="label">Printer: …</span></span>
       <span class="pill subtle" id="model-status">AI: …</span>
-      <button class="pill pill-btn judges-only" id="printer-settings" type="button" disabled>Printer settings</button>
+      <button class="pill pill-btn judges-only" id="printer-settings" type="button" disabled hidden>Printer settings</button>
     </div>
   </header>
 
@@ -65,6 +65,7 @@
   <main class="layout" id="view-dispatch" role="tabpanel" aria-labelledby="tab-dispatch">
     <!-- worker area: identical in shop-floor mode (?mode=floor) and in the judges' demo -->
     <section class="input-panel worker" aria-label="Report a fault by voice">
+      <a class="judges-jump judges-only" id="judges-jump" href="#judges">Judges: try a demo ↓</a>
       <div class="ptt-wrap">
         <button id="ptt" class="ptt" type="button" aria-label="Hold to speak" aria-pressed="false" aria-describedby="ptt-hint">
           <span class="ptt-ring" aria-hidden="true"></span>
@@ -117,7 +118,7 @@
     </section>
 
     <!-- judges' panel: not part of the shop-floor product -->
-    <section class="judges judges-only" aria-labelledby="judges-title">
+    <section class="judges judges-only" id="judges" aria-labelledby="judges-title">
       <h2 id="judges-title">For judges: try it yourself</h2>
       <p class="judges-sub">On the shop floor, workers only use the button or foot pedal. This panel is for testing.</p>
 

@@ -19,10 +19,10 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse  # noqa: E402
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from . import escpos, health, llm, pipeline, printer, stt  # noqa: E402
+from . import escpos, health, llm, pipeline, printer, stt, ticket_page  # noqa: E402
 from .data import CASES, HISTORY, MANUAL, receipt_stamp  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -208,7 +208,8 @@ def api_catalog():
 @app.get("/api/tickets")
 def api_tickets():
     return [{"id": r["id"], "machine_id": r["ticket"].get("machine_id") or "UNKNOWN",
-             "priority": r["ticket"]["priority"], "error_code": r["ticket"].get("error_code"), "created": r["created"]}
+             "priority": r["ticket"]["priority"], "error_code": r["ticket"].get("error_code"), "created": r["created"],
+             "status": r.get("status", "open")}
             for r in reversed(_tickets.values())]
 
 
@@ -219,14 +220,47 @@ def api_ticket(ticket_id: int):
     return _tickets[ticket_id]
 
 
+def _mark_fixed(ticket_id):
+    r = _tickets.get(ticket_id)
+    if r is None:
+        raise HTTPException(404, "Ticket not found")
+    if r.get("status") != "fixed":
+        r.update(status="fixed", fixed_at=receipt_stamp())
+        log.info("ticket #%s marked as fixed", ticket_id)
+    return r
+
+
+@app.post("/api/tickets/{ticket_id}/fixed")
+def api_ticket_fixed(ticket_id: int):
+    r = _mark_fixed(ticket_id)
+    return {"id": ticket_id, "status": r["status"], "fixed_at": r["fixed_at"]}
+
+
+# mobile ticket page behind the receipt's QR code: the ticket and one big "Mark as fixed" button (no login)
+@app.get("/t/{ticket_id}", include_in_schema=False)
+def ticket_view(ticket_id: int):
+    if ticket_id not in _tickets:
+        return HTMLResponse(ticket_page.not_found(ticket_id, _ASSET_VERSION), status_code=404)
+    return HTMLResponse(ticket_page.render(_tickets[ticket_id], _ASSET_VERSION), headers={"Cache-Control": "no-store"})
+
+
+@app.post("/t/{ticket_id}/fixed", include_in_schema=False)
+def ticket_view_fixed(ticket_id: int):
+    if ticket_id not in _tickets:
+        return HTMLResponse(ticket_page.not_found(ticket_id, _ASSET_VERSION), status_code=404)
+    _mark_fixed(ticket_id)
+    return RedirectResponse(f"/t/{ticket_id}", status_code=303)  # reload shows FIXED, no double submit
+
+
 def _finalize(ticket, text, model_info, base_url, timings):
     """Number the ticket, render ESC/POS, send it to the printer (or the simulator) and keep it."""
     t0 = time.perf_counter()
     ticket_id = _new_id()
     created = receipt_stamp()  # real time of printing (CEST/CET), not the demo clock
-    ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/?ticket={ticket_id}"
-    footer = (f"Replay of a recorded {model_info['model']} run (AMD Token Factory)" if model_info["replay"]
-              else f"{model_info['model']} on AMD GPUs via AMD Token Factory")
+    ticket["qr_action_url"] = f"{PUBLIC_URL or base_url.rstrip('/')}/t/{ticket_id}"  # mobile page: mark as fixed
+    # one line (<= 48 columns): the model that really answered, or the recorded run that stood in
+    footer = (f"Replay: {model_info['model']} · AMD Token Factory" if model_info["replay"]
+              else f"{model_info['model']} · AMD Token Factory")
     data = escpos.render(ticket, ticket_id, created, footer, replay=model_info["replay"])
     print_status = printer.send(data)
     timings = dict(timings, printing=time.perf_counter() - t0)

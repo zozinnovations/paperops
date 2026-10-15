@@ -29,6 +29,7 @@
         s.printer === "connected" ? "Printer: connected" : s.printer === "offline" ? "Printer: offline (simulator)" : "Printer: simulator";
       const setupBtn = $("printer-settings");
       setupBtn.disabled = !s.printer_setup;
+      setupBtn.hidden = !s.printer_setup;  // hosted demo: no dead chip
       setupBtn.title = s.printer_setup ? "Printer address, port and test print"
         : "Disabled on the hosted demo. On a local install set ALLOW_PRINTER_SETUP=1.";
       primaryModel = s.primary || s.models[0] || null;  // configured primary, even while it is not listed
@@ -310,7 +311,8 @@
         const b = document.createElement("button");
         b.type = "button";
         b.innerHTML = `<span class="tid">#${t.id}</span><span class="tm">${t.machine_id}${t.error_code ? " · " + t.error_code : ""}</span>` +
-          `<span class="tp p-${t.priority.toLowerCase()}">${t.priority}</span>`;
+          `<span class="tp p-${t.priority.toLowerCase()}">${t.priority}</span>` +
+          (t.status === "fixed" ? '<span class="tp tk-badge-fixed">FIXED</span>' : "");
         b.addEventListener("click", () => openTicket(t.id));
         li.appendChild(b);
         ul.appendChild(li);
@@ -626,6 +628,11 @@
   if (window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches) {
     $("ptt-hint").textContent = "Hold the button while you speak.";
   }
+
+  $("judges-jump").addEventListener("click", (e) => {
+    e.preventDefault();
+    scrollToView($("judges"), "start");
+  });
 
   // ---------- start ----------
   loadStatus();

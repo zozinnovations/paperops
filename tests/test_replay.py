@@ -10,7 +10,7 @@ import unittest
 
 from fastapi.testclient import TestClient
 
-from app import llm, main, pipeline
+from app import escpos, llm, main, pipeline
 from tests.test_fallback import ALL, T01, FakeClient, _503
 
 
@@ -42,9 +42,8 @@ class NoModelAnswers(unittest.TestCase):
         self.assertEqual(result["ticket"]["machine_id"], "HP-400")
         receipt = base64.b64decode(result["escpos"])
         self.assertIn(b"REPLAY - AI NOT REACHABLE", receipt)
-        # footer (wrapped at 48 columns) names the recorded model
-        self.assertIn(f"Replay of a recorded {result['model']} run".encode(), receipt)
-        self.assertNotIn(b"on AMD GPUs via", receipt)
+        # footer, one line: names the recorded model
+        self.assertIn(escpos._enc(f"Replay: {result['model']} · AMD Token Factory"), receipt)
 
     def test_new_report_prints_nothing(self):
         before = len(TestClient(main.app).get("/api/tickets").json())
