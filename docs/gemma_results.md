@@ -2,12 +2,50 @@
 
 PaperOps was built and tested with **Gemma-4-31B-IT on AMD GPUs via the AMD Token Factory** as its primary model.
 On **15 Oct 2026** Gemma-4-31B-IT first returned `503 Service Unavailable` and was then removed from the
-Token Factory's `GET /v1/models` list (AMD is reviewing). Until it returns, the live demo answers with the
-automatic fallback (MiMo / GLM / DeepSeek on AMD GPUs) and names that model on screen and on the receipt.
-This page keeps the record of what Gemma did while it was available.
+Token Factory's `GET /v1/models` list for about a day. During that time the live demo kept printing tickets
+via the automatic fallback (MiMo / GLM / DeepSeek on AMD GPUs) and named that model on screen and on the
+receipt. **Gemma is back since 16 Oct** and answers the live demo again.
 
-All times are **UTC**. Sources: our benchmark runs (`scripts/bench_cases.py`, a T01 repeat run) and the
-recorded Gemma answers committed in [`replay/`](../replay/). No API key or private data is involved.
+All times are **UTC**. Sources: our benchmark runs (`scripts/bench_cases.py`, a T01 repeat run), timings
+measured against the live server, and the recorded Gemma answers committed in [`replay/`](../replay/).
+No API key or private data is involved.
+
+## 16 Oct – Gemma restored
+
+### All 15 test cases, Gemma alone – 15/15
+
+`REPLAY_MODE=off python scripts/bench_cases.py --model Gemma-4-31B-IT`, **2026-10-16 20:28–20:29 UTC**.
+Gemma alone: no fallback model and no replay, every answer below came live from Gemma-4-31B-IT
+(endpoint-reported id `self-dploy/Gemma-4-31B-IT`, plain JSON without a code fence).
+
+| Case | Result | Pass | Time |
+|---|---|---|---|
+| T01 | Hydraulic press HP-400, HIGH, E-402, Lubricating oil ISO VG 46 | pass | 5.28 s |
+| T02 | Hydraulic press HP-400, CRITICAL, E-118, Light curtain test rod 30 mm | pass | 2.26 s |
+| T03 | Hydraulic press HP-400, HIGH, E-215, Universal seal kit NBR 80x95 | pass | 3.84 s |
+| T04 | CNC milling center FZ-65, HIGH, E-701, Coolant concentrate | pass | 4.42 s |
+| T05 | Conveyor belt FB-12, HIGH, E-301, Ball bearing 6205-2RS | pass | 2.32 s |
+| T06 | Welding robot SR-16, NORMAL, E-910, Wire feed roll 1.0 mm | pass | 3.35 s |
+| T07 | Hydraulic press HP-400, HIGH, E-402, Lubricating oil ISO VG 46 | pass | 4.02 s |
+| T08 | UNKNOWN, NORMAL, none | pass | 1.84 s |
+| T09 | Welding robot SR-16, NORMAL, E-944, Shielding gas M21 cylinder 20 l | pass | 4.39 s |
+| T10 | CNC milling center FZ-65, NORMAL, E-733, none | pass | 4.17 s |
+| T11 | Conveyor belt FB-12, NORMAL, E-322, none | pass | 2.09 s |
+| T12 | Hydraulic press HP-400, HIGH, E-402, Lubricating oil ISO VG 46 | pass | 1.85 s |
+| T13 | Hydraulic press HP-400, HIGH, E-215, Universal seal kit NBR 80x95 | pass | 2.18 s |
+| T14 | CNC milling center FZ-65, NORMAL, E-733, none | pass | 11.15 s |
+| T15 | UNKNOWN, NORMAL, none | pass | 1.61 s |
+
+**15/15 passed** · median 3.35 s · min 1.61 s · max 11.15 s (T14: one latency spike). Same results as on
+14 Oct; the Token Factory answered more slowly right after Gemma's return (14 Oct median 2.06 s).
+
+### Live server, voice to ticket
+
+T01–T04 voice samples × 3 against https://paperops.zozinnovations.com, **2026-10-16 20:29–20:31 UTC**
+(speech-to-text on the server's 2 shared vCPUs, then the normal model chain): **11 of 12 tickets answered
+by Gemma-4-31B-IT**, one (T03, round 2) by the MiMo-V2.6-Flash fallback after Gemma had not answered within
+5 s. All 12 tickets correct. Model step 2.6–6.3 s with Gemma (median 4.9 s), total voice to ticket
+5.0–12.6 s (median 8.2 s).
 
 ## 1. Gemma only, all 15 test cases – 15/15
 
