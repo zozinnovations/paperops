@@ -107,6 +107,7 @@ Any ESC/POS 80 mm printer on your network (raw TCP, usually port 9100):
 
 - **Printer settings dialog** – set `ALLOW_PRINTER_SETUP=1` in `.env` (local installs only), restart once, then use *Printer settings* in the header: IP address or host name, port, *Test print* and status. Changes apply immediately, no restart. Only local-network addresses are accepted.
 - **Or via `.env`** – `PRINTER_HOST=192.168.1.50` and `PRINTER_PORT=9100`.
+- **USB printer on Windows** (tested with a POS-80C, driver "Generic / Text Only") – `PRINTER_NAME=POS-80C`, the name shown in Windows *Printers & scanners*, and run without Docker (2b): Docker on Windows cannot reach USB devices. The app sends the same ESC/POS bytes through the Windows print spooler as a raw job; no extra package needed.
 
 The header shows "Printer: connected"; without a printer the ticket appears in the on-screen simulator. On the public server `ALLOW_PRINTER_SETUP` stays `0`, so nobody can point it at arbitrary network targets.
 
@@ -136,6 +137,7 @@ The live app runs at **https://paperops.zozinnovations.com** on the ZOZ INNOVATI
 | `DEMO_NOW` | latest history entry | demo clock for "last 30 days" and recurring faults |
 | `TICKET_TZ` | `Europe/Berlin` | time zone of the date and time printed on the ticket (CEST/CET) |
 | `PRINTER_HOST` / `PRINTER_PORT` | – / `9100` | thermal printer; empty = on-screen simulator |
+| `PRINTER_NAME` | – | USB printer on Windows by its Windows name (e.g. `POS-80C`); wins over `PRINTER_HOST` |
 | `ALLOW_PRINTER_SETUP` | `0` | `1` enables the printer settings dialog (local installs only) |
 | `PUBLIC_URL` | – | HTTPS address of the hosted app |
 | `HOST_PORT` | `8000` | port on your machine for `docker compose` |

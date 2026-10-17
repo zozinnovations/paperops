@@ -1,6 +1,12 @@
-"""Sends ESC/POS bytes to a LAN thermal printer (raw TCP, port 9100), or reports "simulator".
+"""Sends ESC/POS bytes to a thermal printer, or reports "simulator".
 
-The target comes from PRINTER_HOST / PRINTER_PORT, or from the "Printer settings" dialog when
+Two ways to the printer:
+- LAN printer: raw TCP, port 9100 (PRINTER_HOST / PRINTER_PORT).
+- USB printer on Windows: PRINTER_NAME = the printer's name in Windows (e.g. "POS-80C", driver
+  "Generic / Text Only"). The bytes go unchanged through the Windows print spooler as a RAW job
+  (winspool via ctypes, no extra package). Takes precedence over PRINTER_HOST.
+
+The LAN target comes from PRINTER_HOST / PRINTER_PORT, or from the "Printer settings" dialog when
 ALLOW_PRINTER_SETUP=1 (local installs only). Settings are applied at once and kept in cache/printer.json.
 Even then only local-network targets are accepted (private, loopback or link-local addresses): the app must
 never be usable to open connections to arbitrary hosts. On the hosted demo the setup stays disabled.
@@ -20,6 +26,7 @@ _HOSTNAME = re.compile(r"^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-
 
 _lock = threading.Lock()
 _cfg = {"host": os.getenv("PRINTER_HOST", "").strip(), "port": int(os.getenv("PRINTER_PORT") or 9100)}
+WINDOWS_NAME = os.getenv("PRINTER_NAME", "").strip() if os.name == "nt" else ""
 _status = {"checked": 0.0, "online": False}
 
 if ALLOW_SETUP and _SAVED.exists():  # settings saved from the dialog win over .env
@@ -68,8 +75,80 @@ def configure(host, port):
     return status()
 
 
+# ---------- USB printer through the Windows spooler ----------
+if WINDOWS_NAME:
+    import ctypes
+    from ctypes import wintypes
+
+    class _DocInfo1(ctypes.Structure):
+        _fields_ = [("pDocName", wintypes.LPWSTR), ("pOutputFile", wintypes.LPWSTR), ("pDatatype", wintypes.LPWSTR)]
+
+    _winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+    _PRINTER_ATTRIBUTE_WORK_OFFLINE = 0x400
+    _PRINTER_STATUS_BAD = 0x2 | 0x8 | 0x80 | 0x400000  # error, paper jam, offline, not available
+
+
+def _win_open():
+    handle = wintypes.HANDLE()
+    if not _winspool.OpenPrinterW(WINDOWS_NAME, ctypes.byref(handle), None):
+        raise OSError(ctypes.get_last_error(), f"Windows printer {WINDOWS_NAME!r} not found")
+    return handle
+
+
+def _win_online():
+    """Printer known to Windows and not offline (Windows marks an unplugged USB printer offline)."""
+    handle = _win_open()
+    try:
+        needed = wintypes.DWORD()
+        _winspool.GetPrinterW(handle, 2, None, 0, ctypes.byref(needed))
+        buf = ctypes.create_string_buffer(needed.value)
+        if not _winspool.GetPrinterW(handle, 2, buf, needed, ctypes.byref(needed)):
+            return True  # opened fine; no details
+        # PRINTER_INFO_2: 13 pointers, then Attributes, Priority, DefaultPriority, StartTime, UntilTime, Status
+        ptr = ctypes.sizeof(ctypes.c_void_p)
+        attributes = int.from_bytes(buf.raw[13 * ptr:13 * ptr + 4], "little")
+        status_bits = int.from_bytes(buf.raw[13 * ptr + 20:13 * ptr + 24], "little")
+        return not (attributes & _PRINTER_ATTRIBUTE_WORK_OFFLINE or status_bits & _PRINTER_STATUS_BAD)
+    finally:
+        _winspool.ClosePrinter(handle)
+
+
+def _win_send(data):
+    handle = _win_open()
+    try:
+        if not _winspool.StartDocPrinterW(handle, 1, ctypes.byref(_DocInfo1("PaperOps ticket", None, "RAW"))):
+            raise OSError(ctypes.get_last_error(), "StartDocPrinter failed")
+        try:
+            _winspool.StartPagePrinter(handle)
+            written = wintypes.DWORD()
+            buf = ctypes.create_string_buffer(data, len(data))
+            if not _winspool.WritePrinter(handle, buf, len(data), ctypes.byref(written)) or written.value != len(data):
+                raise OSError(ctypes.get_last_error(), "WritePrinter failed")
+            _winspool.EndPagePrinter(handle)
+        finally:
+            _winspool.EndDocPrinter(handle)
+    finally:
+        _winspool.ClosePrinter(handle)
+
+
+def target():
+    """Human-readable printer target, e.g. for the test page."""
+    if WINDOWS_NAME:
+        return f"Windows printer {WINDOWS_NAME} (USB)"
+    cfg = config()
+    return f"{cfg['host']}:{cfg['port']}" if cfg["host"] else "simulator"
+
+
 def status():
-    """'connected', 'offline' (host set but unreachable) or 'simulator' (no host). Cached for 10 s."""
+    """'connected', 'offline' (printer set but unreachable) or 'simulator' (none). Cached for 10 s."""
+    if WINDOWS_NAME:
+        if time.time() - _status["checked"] > 10:
+            try:
+                _status["online"] = _win_online()
+            except OSError:
+                _status["online"] = False
+            _status["checked"] = time.time()
+        return "connected" if _status["online"] else "offline"
     cfg = config()
     if not cfg["host"]:
         return "simulator"
@@ -85,6 +164,14 @@ def status():
 
 def send(data: bytes):
     """Returns 'printed', or 'simulator' if there is no printer / it is unreachable."""
+    if WINDOWS_NAME:
+        try:
+            _win_send(data)
+            _status.update(checked=time.time(), online=True)
+            return "printed"
+        except OSError:
+            _status.update(checked=time.time(), online=False)
+            return "simulator"
     cfg = config()
     if not cfg["host"]:
         return "simulator"

@@ -150,12 +150,11 @@ def api_printer_test(request: Request):
         raise HTTPException(403, "Printer setup is disabled on this server.")
     if _rate_limited(request.client.host if request.client else "?"):
         raise HTTPException(429, "Too many requests - please wait a minute.")
-    cfg = printer.config()
-    if not cfg["host"]:
+    if printer.target() == "simulator":
         return {"result": "simulator", "message": "No printer set - tickets appear in the on-screen simulator."}
-    result = printer.send(escpos.test_page(f"{cfg['host']}:{cfg['port']}", receipt_stamp()))
+    result = printer.send(escpos.test_page(printer.target(), receipt_stamp()))
     return {"result": result, "message": "Test page sent." if result == "printed"
-            else f"Printer {cfg['host']}:{cfg['port']} is not reachable."}
+            else f"{printer.target()} is not reachable."}
 
 
 @app.post("/api/reset")
@@ -174,7 +173,7 @@ def api_reset(request: Request):
 @app.get("/api/status")
 def api_status():
     models = llm.chain()  # while the model list is unknown this also retries discovery in the background
-    return {"printer": printer.status(), "printer_host": printer.config()["host"] or None,
+    return {"printer": printer.status(), "printer_host": printer.WINDOWS_NAME or printer.config()["host"] or None,
             "printer_setup": printer.ALLOW_SETUP,
             "models": models if llm._available is not None else [], "stt": stt.BACKEND,
             "stt_threads": stt.WHISPER_THREADS, "stt_cpus": stt.CPUS, "stt_warmup_s": stt.WARMUP["seconds"],
