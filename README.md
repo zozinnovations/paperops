@@ -2,6 +2,8 @@
 
 > Press. Speak. Fix.
 
+**▶ Demo video (2:48): https://www.youtube.com/watch?v=oS-NslNx5fo** · Live app: https://paperops.zozinnovations.com
+
 A maintenance technician holds one button (or steps on a foot pedal) and describes a machine fault by voice. PaperOps understands the report, looks up the machine manual, checks spare-part stock and prints a short repair ticket on a thermal printer: **safety step first**, the right part and its exact shelf location. No screen to read, no typing – it works with dirty gloves. It also spots faults that keep coming back and points to the root cause.
 
 **AI: Gemma 4 on AMD GPUs via AMD Token Factory.** Google's open model `Gemma-4-31B-IT` turns every report into a structured fault; it runs on AMD GPUs through the [AMD Token Factory](https://notebooks.amd.com/tokenfactory).
@@ -13,7 +15,7 @@ Built for the **AMD Developer Hackathon: ACT III** – Track 1 *Intelligent Indu
 ## Live demo
 
 - App: https://paperops.zozinnovations.com
-- Video: TODO
+- Video: https://www.youtube.com/watch?v=oS-NslNx5fo
 
 ## Who it's for
 
